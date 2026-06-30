@@ -113,7 +113,7 @@ function showJoinerView() {
   const data = menuData[SHOP_ID];
   document.getElementById('joinerSection').style.display = '';
   document.getElementById('joinerShopHero').innerHTML = `
-    <div class="joiner-shop-logo"><img src="${data.logo}" alt="${data.name}" /></div>
+    <div class="joiner-shop-logo" style="background-image:url('${data.logo}')" role="img" aria-label="${data.name}"></div>
     <div class="joiner-shop-name">${data.name}</div>
     <div class="joiner-shop-desc">${data.desc}</div>`;
 }
