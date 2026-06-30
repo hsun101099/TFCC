@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>50嵐 點餐去！</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- ── Name Entry Overlay ── -->
+  <div class="session-overlay hidden" id="nameOverlay">
+    <div class="session-box">
+      <div class="session-icon">🧋</div>
+      <h1 class="session-app-name">50嵐 點餐去！</h1>
+      <p class="session-app-sub">先填你的名字，等等飲料來的時候才知道是誰的喔～</p>
+      <label class="field-label">你的名字</label>
+      <input class="field-input" id="nameInput" placeholder="例：阿明、小花…" maxlength="12" />
+      <button class="session-submit-btn" id="nameSubmitBtn">開始點餐 →</button>
+    </div>
+  </div>
+
+  <!-- ── Toast Notification ── -->
+  <div class="toast" id="toast"></div>
+
+  <!-- ── Banner (name + actions) ── -->
+  <div class="session-banner" id="sessionBanner" style="display:none">
+    <div class="banner-top">
+      <span id="bannerText"></span>
+      <div class="banner-actions">
+        <button class="banner-btn" id="orderMgrBtn">📋 訂單管理</button>
+        <button class="banner-btn" id="changeNameBtn">🔄 換人</button>
+      </div>
+    </div>
+    <div class="banner-stats" id="bannerStats"></div>
+  </div>
+
+  <!-- ── Main Content ── -->
+  <div id="mainContent">
+    <section class="joiner-section" id="joinerSection" style="display:none">
+      <div class="joiner-shop-hero" id="joinerShopHero"></div>
+      <button class="joiner-order-btn" id="joinerOrderBtn">開始點餐 →</button>
+    </section>
+  </div>
+
+  <!-- ── 3-Step Modal ── -->
+  <div class="modal-overlay" id="menuModal">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div class="modal-header">
+        <div class="modal-shop-row">
+          <div class="modal-logo-wrap"><img id="modalLogo" src="" alt="" /></div>
+          <div>
+            <h2 id="modalTitle" class="modal-title"></h2>
+            <p id="modalDesc" class="modal-subtitle"></p>
+          </div>
+        </div>
+        <button class="modal-close" id="modalClose">✕</button>
+      </div>
+      <div class="steps-bar">
+        <div class="step-item" id="si1"><div class="step-num">1</div><span class="step-lbl">瀏覽菜單</span></div>
+        <div class="step-track"><div class="step-fill" id="fill1"></div></div>
+        <div class="step-item" id="si2"><div class="step-num">2</div><span class="step-lbl">選擇品項</span></div>
+        <div class="step-track"><div class="step-fill" id="fill2"></div></div>
+        <div class="step-item" id="si3"><div class="step-num">3</div><span class="step-lbl">客製選項</span></div>
+      </div>
+      <div class="panel-container">
+        <div class="step-panel" id="panel1"></div>
+        <div class="step-panel" id="panel2"></div>
+        <div class="step-panel" id="panel3"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="foot-btn back-btn" id="btnBack">← 返回</button>
+        <div class="cart-pill" id="cartPill"><span id="cartCount">0</span> 項・$<span id="cartTotal">0</span></div>
+        <button class="foot-btn next-btn" id="btnNext">開始點餐 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Order Summary Overlay ── -->
+  <div class="summary-overlay" id="summaryOverlay">
+    <div class="summary-box">
+      <h2 class="summary-title">🧾 訂單明細</h2>
+      <div class="summary-member-row" id="summaryMemberRow"></div>
+      <div class="summary-items" id="summaryItems"></div>
+      <div class="summary-total-row"><span>合計</span><span id="summaryTotal"></span></div>
+      <button class="summary-confirm-btn" id="summaryConfirm">確認送出訂單</button>
+      <button class="summary-back-btn" id="summaryBack">← 繼續點餐</button>
+    </div>
+  </div>
+
+  <!-- ── Order Manager Overlay ── -->
+  <div class="summary-overlay" id="orderMgrOverlay">
+    <div class="summary-box">
+      <div class="mgr-header">
+        <h2 class="summary-title">📋 訂單管理</h2>
+      </div>
+      <div id="orderMgrContent"></div>
+      <div class="summary-total-row"><span>全部合計</span><span id="orderMgrTotal"></span></div>
+      <div class="mgr-actions">
+        <button class="mgr-action-btn" id="copyMembersBtn">📋 複製成員清單</button>
+        <button class="mgr-action-btn outline" id="copyShopBtn">🧋 複製叫貨清單</button>
+      </div>
+      <button class="summary-back-btn" id="orderMgrClose">← 關閉</button>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
