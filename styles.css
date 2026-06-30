@@ -475,23 +475,6 @@ body {
 }
 .mgr-action-btn.outline:hover { background: var(--warm); }
 
-/* ── Menu image collapsible ── */
-.menu-img-details {
-  margin: 0 16px 20px; border: 1.5px solid var(--warm);
-  border-radius: 14px; overflow: hidden; background: var(--white);
-}
-.menu-img-summary {
-  padding: 12px 16px; cursor: pointer; list-style: none;
-  font-size: 0.82rem; font-weight: 600; color: var(--brown);
-  display: flex; align-items: center; gap: 8px;
-  user-select: none; transition: background 0.15s;
-}
-.menu-img-summary:hover { background: var(--warm); }
-.menu-img-summary::marker, .menu-img-summary::-webkit-details-marker { display: none; }
-.menu-img-toggle-arrow { margin-left: auto; transition: transform 0.25s; }
-details[open] .menu-img-toggle-arrow { transform: rotate(180deg); }
-.menu-img-full { width: 100%; display: block; }
-
 /* ── Summary member badge ── */
 .summary-member-row {
   background: var(--warm); border-radius: 10px; padding: 8px 12px;

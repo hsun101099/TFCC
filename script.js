@@ -19,12 +19,20 @@ const SHOP_ID = '50lan';
 const menuData = {
   '50lan': {
     name: '50嵐', desc: '好茶陪伴你的日常', logo: 'images/logo-50lan.png',
-    menuImg: 'images/menu-50lan.jpg',
     sweetness: ['無糖','微糖','半糖','少糖','正常'],
     ice: ['去冰','微冰','少冰','正常冰','溫','熱'],
+    // 非純茶類飲品（奶茶/拿鐵/瑪奇朵等）可免費加珍珠、波霸、椰果或其混搭組合；
+    // 純茶類（找好茶／找新鮮）加同樣的料需額外收費；布丁、香草冰淇淋因需給整份，一律額外收費。
     toppings: [
-      { name: '珍珠', price: 0 }, { name: '波霸', price: 0 },
-      { name: '椰果', price: 5 }, { name: '布丁', price: 5 },
+      { name: '珍珠', priceMilk: 0, priceTea: 5 },
+      { name: '波霸', priceMilk: 0, priceTea: 5 },
+      { name: '椰果', priceMilk: 0, priceTea: 5 },
+      { name: '混珠（珍珠+波霸）', priceMilk: 0, priceTea: 5 },
+      { name: '珍波椰（三色）', priceMilk: 0, priceTea: 5 },
+      { name: '珍椰（珍珠+椰果）', priceMilk: 0, priceTea: 5 },
+      { name: '波椰（波霸+椰果）', priceMilk: 0, priceTea: 5 },
+      { name: '布丁', priceMilk: 15, priceTea: 15 },
+      { name: '香草冰淇淋', priceMilk: 15, priceTea: 15 },
     ],
     categories: [
       { title: '⭐ 店長推薦', items: [
@@ -35,7 +43,7 @@ const menuData = {
         { name: '旺來綠＋椰果', note: '', price: 'M$50 / L$60' },
         { name: '荔枝烏龍＋珍珠', note: '', price: 'M$50 / L$60' },
       ]},
-      { title: '🍵 找好茶', items: [
+      { title: '🍵 找好茶', teaOnly: true, items: [
         { name: '阿薩姆紅茶', note: '', price: 'M$35 / L$40' },
         { name: '茉莉綠茶', note: '', price: 'M$35 / L$40' },
         { name: '四季春青茶', note: '', price: 'M$35 / L$40' },
@@ -113,7 +121,7 @@ const menuData = {
         { name: '冰淇淋麵茶黃金烏龍拿鐵', note: '', price: 'M$70 / L$85' },
         { name: '冰淇淋麵茶重焙烏龍拿鐵', note: '', price: 'M$70 / L$85' },
       ]},
-      { title: '🍋 找新鮮', items: [
+      { title: '🍋 找新鮮', teaOnly: true, items: [
         { name: '8冰茶', note: '', price: 'M$50 / L$60' },
         { name: '檸檬汁', note: '', price: 'M$55 / L$65' },
         { name: '金桔檸檬', note: '', price: 'M$55 / L$65' },
@@ -303,18 +311,7 @@ function renderStep1() {
   const data = menuData[SHOP_ID];
   const panel = document.getElementById('panel1');
 
-  const imgSection = data.menuImg ? `
-    <details class="menu-img-details">
-      <summary class="menu-img-summary">
-        📷 查看完整菜單圖片
-        <span class="menu-img-toggle-arrow">▼</span>
-      </summary>
-      <img src="${data.menuImg}" alt="${data.name}菜單" class="menu-img-full" loading="lazy"
-        onerror="this.parentElement.style.display='none'">
-    </details>` : '';
-
   panel.innerHTML = `
-    ${imgSection}
     <div class="menu-board">
       ${data.categories.map(cat => `
         <div class="board-section">
@@ -375,7 +372,10 @@ function renderCategoryItems(catIdx) {
 
   list.querySelectorAll('.add-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      state.pendingItem = { name: btn.dataset.name, note: btn.dataset.note, price: btn.dataset.price };
+      state.pendingItem = {
+        name: btn.dataset.name, note: btn.dataset.note, price: btn.dataset.price,
+        isTea: !!data.categories[catIdx].teaOnly,
+      };
       renderStep3();
       goToStep(3);
     });
@@ -434,17 +434,19 @@ function renderStep3() {
 
       ${hasToppings ? `
       <div class="customize-section">
-        <label class="customize-label">➕ 加料</label>
+        <label class="customize-label">➕ 加料${item.isTea ? '（純茶類加料需額外收費）' : '（珍珠／波霸／椰果及其混搭組合免費加！）'}</label>
         <div class="toppings-grid" id="toppingsGrid">
-          ${data.toppings.map(t => `
-            <div class="topping-row" data-name="${t.name}" data-price="${t.price}">
+          ${data.toppings.map(t => {
+            const price = item.isTea ? t.priceTea : t.priceMilk;
+            return `
+            <div class="topping-row" data-name="${t.name}" data-price="${price}">
               <div class="topping-row-left">
                 <div class="topping-check-icon"></div>
                 <span class="topping-name">${t.name}</span>
               </div>
-              <span class="topping-price">${t.price > 0 ? '+$' + t.price : '內含'}</span>
-            </div>
-          `).join('')}
+              <span class="topping-price">${price > 0 ? '+$' + price : '免費'}</span>
+            </div>`;
+          }).join('')}
         </div>
       </div>` : ''}
 
