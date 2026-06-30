@@ -860,16 +860,29 @@ async function renderAdminView() {
   }
 }
 
-let logoTapTimestamps = [];
-document.getElementById('joinerShopHero').addEventListener('click', e => {
+// Long-press (not triple-tap) the shop logo to open admin mode.
+// Triple-tap is unreliable on real phones because rapid taps on an
+// image commonly get eaten by the browser's double-tap-to-zoom gesture;
+// a held press doesn't have that problem.
+let logoPressTimer = null;
+const joinerHero = document.getElementById('joinerShopHero');
+
+joinerHero.addEventListener('pointerdown', e => {
   if (!e.target.closest('.joiner-shop-logo')) return;
-  const now = Date.now();
-  logoTapTimestamps = logoTapTimestamps.filter(t => now - t < 1500);
-  logoTapTimestamps.push(now);
-  if (logoTapTimestamps.length >= 3) {
-    logoTapTimestamps = [];
+  clearTimeout(logoPressTimer);
+  logoPressTimer = setTimeout(() => {
+    logoPressTimer = null;
     openAdminOverlay();
-  }
+  }, 700);
+});
+['pointerup', 'pointercancel', 'pointerleave'].forEach(evt => {
+  joinerHero.addEventListener(evt, () => {
+    clearTimeout(logoPressTimer);
+    logoPressTimer = null;
+  });
+});
+joinerHero.addEventListener('contextmenu', e => {
+  if (e.target.closest('.joiner-shop-logo')) e.preventDefault();
 });
 
 document.getElementById('adminOverlay').addEventListener('click', e => {
@@ -1011,10 +1024,11 @@ function renderMembersView(snap) {
 
   content.innerHTML = Object.entries(grouped).map(([member, orders]) =>
     orders.map(order => {
+      const isMine = member === session.name;
       return `<div class="order-member-group">
         <div class="order-member-name">
           <span>${member}（$${order.total || 0}）</span>
-          <button class="delete-order-btn" data-id="${order._id}" data-summary="${(order.items||[]).map(it => `${it.name} ×${it.qty}`).join('、').replace(/"/g, '&quot;')}">刪除</button>
+          ${isMine ? `<button class="delete-order-btn" data-id="${order._id}" data-summary="${(order.items||[]).map(it => `${it.name} ×${it.qty}`).join('、').replace(/"/g, '&quot;')}">刪除</button>` : ''}
         </div>
         ${(order.items||[]).map(it => `
           <div class="order-item-mini">
