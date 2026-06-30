@@ -734,10 +734,10 @@ function renderFortuneQuiz(box, zodiacKey) {
     <div class="fortune-quiz" id="fortuneQuiz">
       <p class="fortune-quiz-title">✨ 讓我幫你找今天最適合的飲品</p>
       <div class="fortune-quiz-q">
-        <span class="fortune-quiz-label">口感風格</span>
+        <span class="fortune-quiz-label">今天想喝什麼類型？</span>
         <div class="fortune-quiz-opts">
-          <button class="fortune-quiz-opt" data-q="style" data-val="fresh">🍃 清爽不甜膩</button>
-          <button class="fortune-quiz-opt" data-q="style" data-val="rich">🧋 濃郁香醇</button>
+          <button class="fortune-quiz-opt" data-q="style" data-val="fresh">🍵 清爽純茶類</button>
+          <button class="fortune-quiz-opt" data-q="style" data-val="rich">🥛 濃郁奶茶類</button>
         </div>
       </div>
       <div class="fortune-quiz-q">
@@ -748,10 +748,10 @@ function renderFortuneQuiz(box, zodiacKey) {
         </div>
       </div>
       <div class="fortune-quiz-q">
-        <span class="fortune-quiz-label">飲品基底</span>
+        <span class="fortune-quiz-label">風味方向</span>
         <div class="fortune-quiz-opts">
-          <button class="fortune-quiz-opt" data-q="base" data-val="milk">🥛 奶類</button>
-          <button class="fortune-quiz-opt" data-q="base" data-val="tea">🍵 茶 / 果茶類</button>
+          <button class="fortune-quiz-opt" data-q="flavor" data-val="special">✨ 來點特色款</button>
+          <button class="fortune-quiz-opt" data-q="flavor" data-val="classic">🫖 點個經典原味</button>
         </div>
       </div>
       <div id="quizResult"></div>
@@ -766,7 +766,7 @@ function renderFortuneQuiz(box, zodiacKey) {
       box.querySelectorAll(`.fortune-quiz-opt[data-q="${q}"]`).forEach(b => {
         b.classList.toggle('selected', b === btn);
       });
-      if (quizAnswers.style && quizAnswers.topping && quizAnswers.base) {
+      if (quizAnswers.style && quizAnswers.topping && quizAnswers.flavor) {
         renderFortuneQuizResult(box);
       }
     });
@@ -783,16 +783,19 @@ function drinkSeriesKey(name) {
 }
 
 function renderFortuneQuizResult(box) {
-  const { style, topping, base, _zodiacKey } = quizAnswers;
+  const { style, topping, flavor, _zodiacKey } = quizAnswers;
   const wantTopping = topping === 'yes';
-  const wantMilk = base === 'milk';
+  // Q1 IS the milk/tea filter: 清爽純茶=非奶, 濃郁奶茶=奶類
+  const wantMilk = style === 'rich';
 
-  // Style gives a gentle base signal; zodiac at 4× is the main driver so each
-  // sign gets genuinely different results even with identical quiz answers.
   const pref = {};
   const add = (k, v) => { pref[k] = (pref[k] || 0) + v; };
-  if (style === 'fresh') { add('fresh', 1); add('classic', 0.5); add('fruity', 0.25); }
-  else { add('milky', 0.75); add('indulgent', 0.75); add('comfort', 0.5); }
+  // Q1 soft signal reinforces the pool direction
+  if (style === 'fresh') { add('fresh', 1.5); add('classic', 0.8); }
+  else { add('milky', 1.5); add('indulgent', 1); add('comfort', 0.8); }
+  // Q3 adds a genuinely different dimension (特色 vs 經典)
+  if (flavor === 'special') { add('fruity', 1.5); add('indulgent', 0.8); add('bold', 0.5); }
+  else { add('classic', 1.5); add('comfort', 1); }
 
   const zodiac = ZODIAC_LIST.find(z => z.key === _zodiacKey);
   if (zodiac && zodiac.traits) {
