@@ -1,0 +1,41 @@
+name: Daily Drink Fortune
+
+on:
+  schedule:
+    # 16:00 UTC = 00:00 Asia/Taipei (next day) — refreshes before the day starts
+    - cron: '0 16 * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Generate today's fortune via Claude
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: node scripts/generate-fortune.js
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- data/fortune-today.json; then
+            echo "No changes to data/fortune-today.json, skipping commit."
+          else
+            git add data/fortune-today.json
+            git commit -m "Update today's drink fortune ($(date -u +%Y-%m-%d))"
+            git push origin HEAD:main
+          fi

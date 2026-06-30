@@ -43,6 +43,7 @@
     <section class="joiner-section" id="joinerSection" style="display:none">
       <div class="joiner-shop-hero" id="joinerShopHero"></div>
       <button class="joiner-order-btn" id="joinerOrderBtn">開始點餐 →</button>
+      <button class="joiner-fortune-btn" id="joinerFortuneBtn">🔮 今日飲料運勢</button>
     </section>
   </div>
 
@@ -108,8 +109,15 @@
     </div>
   </div>
 
+  <!-- ── Daily Drink Fortune Overlay ── -->
+  <div class="summary-overlay" id="fortuneOverlay">
+    <div class="summary-box" id="fortuneBox"></div>
+  </div>
+
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="data/menu-data.js"></script>
+  <script src="data/fortune-config.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

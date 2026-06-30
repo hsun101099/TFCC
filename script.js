@@ -12,142 +12,10 @@ firebase.initializeApp({
 const db = firebase.firestore();
 
 /* ══════════════════════════════════════════════
-   MENU DATA — currently just 50嵐, more shops to come later
+   MENU DATA — loaded from data/menu-data.js (single source of truth
+   shared with scripts/generate-fortune.js), currently just 50嵐
 ══════════════════════════════════════════════ */
 const SHOP_ID = '50lan';
-
-const menuData = {
-  '50lan': {
-    name: '50嵐', desc: '好茶陪伴你的日常', logo: 'images/logo-50lan.png',
-    sweetness: ['無糖','9分甜','8分甜','少糖','6分甜','半糖','4分甜','微糖','2分甜','1分甜','正常甜'],
-    ice: ['正常冰','少冰','微冰','去冰','常溫','溫','熱'],
-    // 非純茶類飲品（奶茶/拿鐵/瑪奇朵等）可免費加珍珠、波霸、椰果或其混搭組合；
-    // 純茶類（找好茶／找新鮮）加同樣的料需額外收費；布丁、香草冰淇淋因需給整份，一律額外收費。
-    toppings: [
-      { name: '珍珠', priceMilk: 0, priceTea: 5 },
-      { name: '波霸', priceMilk: 0, priceTea: 5 },
-      { name: '椰果', priceMilk: 0, priceTea: 5 },
-      { name: '混珠（珍珠+波霸）', priceMilk: 0, priceTea: 5 },
-      { name: '珍波椰（三色）', priceMilk: 0, priceTea: 5 },
-      { name: '珍椰（珍珠+椰果）', priceMilk: 0, priceTea: 5 },
-      { name: '波椰（波霸+椰果）', priceMilk: 0, priceTea: 5 },
-      { name: '布丁', priceMilk: 15, priceTea: 15 },
-      { name: '香草冰淇淋', priceMilk: 15, priceTea: 15 },
-    ],
-    categories: [
-      { title: '⭐ 店長推薦', items: [
-        { name: '四季春珍波椰', note: '', price: 'M$40 / L$50' },
-        { name: '微檸檬綠', note: '', price: 'M$45 / L$55' },
-        { name: '芒果紅茶', note: '', price: 'M$50 / L$60' },
-        { name: '冰淇淋重焙烏龍拿鐵', note: '', price: 'M$75 / L$90' },
-        { name: '旺來綠＋椰果', note: '', price: 'M$50 / L$60' },
-        { name: '荔枝烏龍＋珍珠', note: '', price: 'M$50 / L$60' },
-      ]},
-      { title: '🍵 找好茶', teaOnly: true, items: [
-        { name: '阿薩姆紅茶', note: '', price: 'M$35 / L$40' },
-        { name: '茉莉綠茶', note: '', price: 'M$35 / L$40' },
-        { name: '四季春青茶', note: '', price: 'M$35 / L$40' },
-        { name: '黃金烏龍', note: '', price: 'M$35 / L$40' },
-        { name: '檸檬綠', note: '', price: 'M$50 / L$60' },
-        { name: '檸檬紅', note: '', price: 'M$50 / L$60' },
-        { name: '梅の綠', note: '', price: 'M$50 / L$60' },
-        { name: '8冰綠', note: '', price: 'M$50 / L$60' },
-        { name: '桔子綠', note: '', price: 'M$50 / L$60' },
-        { name: '養樂多綠', note: '', price: 'M$50 / L$60' },
-        { name: '鮮柚綠', note: '', price: 'M$60 / L$75' },
-        { name: '旺來紅', note: '', price: 'M$50 / L$60' },
-        { name: '旺來綠', note: '', price: 'M$50 / L$60' },
-        { name: '柚子烏龍', note: '', price: 'M$50 / L$60' },
-        { name: '柚子紅', note: '', price: 'M$50 / L$60' },
-        { name: '柚子綠', note: '', price: 'M$50 / L$60' },
-        { name: '柚子青', note: '', price: 'M$50 / L$60' },
-        { name: '麵茶綠', note: '', price: 'M$50 / L$60' },
-        { name: '麵茶紅', note: '', price: 'M$50 / L$60' },
-        { name: '麵茶青', note: '', price: 'M$50 / L$60' },
-        { name: '麵茶烏龍', note: '', price: 'M$50 / L$60' },
-      ]},
-      { title: '🥛 找奶茶', items: [
-        { name: '奶茶', note: '', price: 'M$50 / L$60' },
-        { name: '奶綠', note: '', price: 'M$50 / L$60' },
-        { name: '紅茶瑪奇朵', note: '', price: 'M$50 / L$60' },
-        { name: '綠茶瑪奇朵', note: '', price: 'M$50 / L$60' },
-        { name: '四季瑪奇朵', note: '', price: 'M$50 / L$60' },
-        { name: '烏龍瑪奇朵', note: '', price: 'M$50 / L$60' },
-        { name: '四季奶青', note: '', price: 'M$50 / L$60' },
-        { name: '黃金烏龍奶', note: '', price: 'M$50 / L$60' },
-        { name: '阿華田', note: '', price: 'M$50 / L$60' },
-        { name: '麵茶奶綠', note: '', price: 'M$60 / L$75' },
-        { name: '麵茶奶茶', note: '', price: 'M$60 / L$75' },
-        { name: '麵茶四季奶青', note: '', price: 'M$60 / L$75' },
-        { name: '麵茶黃金烏龍奶', note: '', price: 'M$60 / L$75' },
-      ]},
-      { title: '🧋 找口感', items: [
-        { name: '波霸紅茶', note: '', price: 'M$40 / L$50' },
-        { name: '波霸綠茶', note: '', price: 'M$40 / L$50' },
-        { name: '波霸青茶', note: '', price: 'M$40 / L$50' },
-        { name: '波霸烏龍茶', note: '', price: 'L$50' },
-        { name: '波霸奶茶', note: '', price: 'M$50 / L$60' },
-        { name: '波霸奶綠', note: '', price: 'M$50 / L$60' },
-        { name: '珍珠紅茶', note: '', price: 'M$40 / L$50' },
-        { name: '珍珠綠茶', note: '', price: 'M$40 / L$50' },
-        { name: '珍珠青茶', note: '', price: 'M$40 / L$50' },
-        { name: '珍珠黃金烏龍', note: '', price: 'M$40 / L$50' },
-        { name: '珍珠奶茶', note: '', price: 'M$50 / L$60' },
-        { name: '椰果奶茶', note: '', price: 'M$50 / L$60' },
-        { name: '布丁奶茶', note: '', price: 'M$60 / L$75' },
-        { name: '布丁奶綠', note: '', price: 'M$60 / L$75' },
-        { name: '布丁奶青', note: '', price: 'M$60 / L$75' },
-        { name: '布丁烏龍奶茶', note: '', price: 'M$60 / L$75' },
-        { name: '布丁紅', note: '', price: 'M$50 / L$60' },
-        { name: '布丁綠', note: '', price: 'M$50 / L$60' },
-        { name: '布丁青', note: '', price: 'M$50 / L$60' },
-        { name: '布丁黃金烏龍', note: '', price: 'M$50 / L$60' },
-      ]},
-      { title: '☕ 紅茶拿鐵', items: [
-        { name: '紅茶拿鐵', note: '', price: 'M$60 / L$75' },
-        { name: '綠茶拿鐵', note: '', price: 'M$60 / L$75' },
-        { name: '黃金烏龍拿鐵', note: '', price: 'M$60 / L$75' },
-        { name: '阿華田拿鐵', note: '', price: 'M$60 / L$75' },
-        { name: '珍珠鮮奶', note: '', price: 'M$70 / L$85' },
-        { name: '波霸鮮奶', note: '', price: 'M$70 / L$85' },
-        { name: '重焙烏龍拿鐵', note: '', price: 'M$60 / L$75' },
-        { name: '麵茶綠茶拿鐵', note: '', price: 'M$65 / L$80' },
-        { name: '麵茶紅茶拿鐵', note: '', price: 'M$65 / L$80' },
-        { name: '麵茶黃金烏龍拿鐵', note: '', price: 'M$65 / L$80' },
-        { name: '麵茶重焙烏龍拿鐵', note: '', price: 'M$65 / L$80' },
-        { name: '冰淇淋麵茶綠茶拿鐵', note: '', price: 'M$70 / L$85' },
-        { name: '冰淇淋麵茶紅茶拿鐵', note: '', price: 'M$70 / L$85' },
-        { name: '冰淇淋麵茶四季拿鐵', note: '', price: 'M$70 / L$85' },
-        { name: '冰淇淋麵茶黃金烏龍拿鐵', note: '', price: 'M$70 / L$85' },
-        { name: '冰淇淋麵茶重焙烏龍拿鐵', note: '', price: 'M$70 / L$85' },
-      ]},
-      { title: '🍋 找新鮮', teaOnly: true, items: [
-        { name: '8冰茶', note: '', price: 'M$50 / L$60' },
-        { name: '檸檬汁', note: '', price: 'M$55 / L$65' },
-        { name: '金桔檸檬', note: '', price: 'M$55 / L$65' },
-        { name: '檸檬梅汁', note: '', price: 'M$60 / L$75' },
-        { name: '檸檬養樂多', note: '', price: 'M$65 / L$80' },
-        { name: '葡萄柚多多', note: '', price: 'M$65 / L$80' },
-        { name: '柚子茶', note: '', price: 'M$50 / L$60' },
-        { name: '鮮柚汁', note: '', price: 'M$60 / L$75' },
-      ]},
-      { title: '🍦 找冰淇淋', items: [
-        { name: '芒果紅', note: '', price: 'M$50 / L$60' },
-        { name: '芒果綠', note: '', price: 'M$50 / L$60' },
-        { name: '芒果青', note: '', price: 'M$50 / L$60' },
-        { name: '芒果烏龍', note: '', price: 'M$50 / L$60' },
-        { name: '荔枝紅', note: '', price: 'M$50 / L$60' },
-        { name: '荔枝綠', note: '', price: 'M$50 / L$60' },
-        { name: '荔枝青', note: '', price: 'M$50 / L$60' },
-        { name: '荔枝烏龍', note: '', price: 'M$50 / L$60' },
-        { name: '冰淇淋紅茶', note: '', price: 'M$50 / L$60' },
-        { name: '冰淇淋綠茶', note: '', price: 'M$50 / L$60' },
-        { name: '冰淇淋青茶', note: '', price: 'M$50 / L$60' },
-        { name: '冰淇淋烏龍茶', note: '', price: 'M$50 / L$60' },
-      ]},
-    ]
-  },
-};
 
 /* ══════════════════════════════════════════════
    HELPERS
@@ -632,6 +500,172 @@ function closeModal() {
   document.body.style.overflow = '';
 }
 
+function findMenuItem(name) {
+  const data = menuData[SHOP_ID];
+  for (const cat of data.categories) {
+    const item = cat.items.find(i => i.name === name);
+    if (item) return { item, isTea: !!cat.teaOnly };
+  }
+  return null;
+}
+
+function openShopAtItem(itemName) {
+  const found = findMenuItem(itemName);
+  if (!found) { showToast('找不到這個品項，請自行從菜單挑選'); openShop(); return; }
+  const data = menuData[SHOP_ID];
+
+  document.getElementById('modalLogo').src = data.logo;
+  document.getElementById('modalLogo').alt = data.name;
+  document.getElementById('modalTitle').textContent = data.name;
+  document.getElementById('modalDesc').textContent = data.desc;
+  renderStep1();
+  renderStep2();
+  document.getElementById('menuModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+
+  state.pendingItem = { name: found.item.name, note: found.item.note, price: found.item.price, isTea: found.isTea };
+  renderStep3();
+  goToStep(3);
+}
+
+/* ══════════════════════════════════════════════
+   DAILY DRINK FORTUNE — "今日飲料運勢"
+   Recommendations are generated once a day by a real Claude API call
+   (see scripts/generate-fortune.js + .github/workflows/daily-fortune.yml)
+   and published to data/fortune-today.json.
+══════════════════════════════════════════════ */
+let fortuneDataCache;
+async function loadFortuneData() {
+  if (fortuneDataCache !== undefined) return fortuneDataCache;
+  try {
+    const res = await fetch('data/fortune-today.json', { cache: 'no-store' });
+    fortuneDataCache = res.ok ? await res.json() : null;
+  } catch (e) {
+    fortuneDataCache = null;
+  }
+  return fortuneDataCache;
+}
+
+const fortuneState = { view: 'select' };
+
+async function openFortuneOverlay() {
+  fortuneState.view = 'select';
+  document.getElementById('fortuneOverlay').classList.add('open');
+  await renderFortuneView();
+}
+
+function closeFortuneOverlay() {
+  document.getElementById('fortuneOverlay').classList.remove('open');
+}
+
+async function renderFortuneView() {
+  const box = document.getElementById('fortuneBox');
+
+  if (fortuneState.view === 'select') {
+    const data = await loadFortuneData();
+    if (!data) {
+      box.innerHTML = `
+        <h2 class="summary-title">🔮 今日飲料運勢</h2>
+        <p class="fortune-subtitle">今天的運勢資料還在生成中，請稍後再來看看，或是直接挑選自己喜歡的飲料吧！</p>
+        <button class="summary-back-btn" id="fortuneSkipBtn">🧋 直接點餐去</button>`;
+      box.querySelector('#fortuneSkipBtn').addEventListener('click', () => { closeFortuneOverlay(); openShop(); });
+      return;
+    }
+    box.innerHTML = `
+      <h2 class="summary-title">🔮 今日飲料運勢</h2>
+      <p class="fortune-subtitle">讓 Claude AI 幫你算算今天適合喝什麼吧！每天都會重新生成 ✨</p>
+      <div class="fortune-mode-grid">
+        <button class="fortune-mode-btn" data-mode="zodiac">
+          <span class="fortune-mode-icon">♈</span>
+          <span><span class="fortune-mode-name">星座占卜</span><br><span class="fortune-mode-desc">選你的星座，看今天適合喝什麼</span></span>
+        </button>
+        <button class="fortune-mode-btn" data-mode="tarot">
+          <span class="fortune-mode-icon">🔮</span>
+          <span><span class="fortune-mode-name">抽牌占卜</span><br><span class="fortune-mode-desc">隨機抽一張塔羅牌，揭曉今日運勢</span></span>
+        </button>
+      </div>
+      <button class="fortune-link-btn" id="fortuneSkipBtn">不用了，直接點餐去 →</button>`;
+    box.querySelectorAll('.fortune-mode-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        fortuneState.view = btn.dataset.mode === 'zodiac' ? 'zodiac' : 'tarot';
+        renderFortuneView();
+      });
+    });
+    box.querySelector('#fortuneSkipBtn').addEventListener('click', () => { closeFortuneOverlay(); openShop(); });
+
+  } else if (fortuneState.view === 'zodiac') {
+    box.innerHTML = `
+      <button class="fortune-link-btn" id="fortuneBackBtn">← 返回</button>
+      <h2 class="summary-title">♈ 選擇你的星座</h2>
+      <div class="fortune-pick-grid">
+        ${ZODIAC_LIST.map(z => `
+          <button class="fortune-pick-btn" data-key="${z.key}">
+            <div class="fortune-pick-icon">${z.icon}</div>
+            <div class="fortune-pick-name">${z.key}</div>
+          </button>`).join('')}
+      </div>`;
+    box.querySelector('#fortuneBackBtn').addEventListener('click', () => { fortuneState.view = 'select'; renderFortuneView(); });
+    box.querySelectorAll('.fortune-pick-btn').forEach(btn => {
+      btn.addEventListener('click', () => renderFortuneResult('zodiac', btn.dataset.key));
+    });
+
+  } else if (fortuneState.view === 'tarot') {
+    box.innerHTML = `
+      <button class="fortune-link-btn" id="fortuneBackBtn">← 返回</button>
+      <h2 class="summary-title">🔮 抽牌占卜</h2>
+      <p class="fortune-subtitle">點擊下方卡牌，抽一張屬於今天的塔羅牌</p>
+      <button class="fortune-draw-btn" id="fortuneDrawBtn">🎴 點我抽一張牌</button>`;
+    box.querySelector('#fortuneBackBtn').addEventListener('click', () => { fortuneState.view = 'select'; renderFortuneView(); });
+    box.querySelector('#fortuneDrawBtn').addEventListener('click', () => {
+      const card = TAROT_LIST[Math.floor(Math.random() * TAROT_LIST.length)];
+      renderFortuneResult('tarot', card.key);
+    });
+  }
+}
+
+async function renderFortuneResult(mode, key) {
+  const box = document.getElementById('fortuneBox');
+  const data = await loadFortuneData();
+  const section = mode === 'zodiac' ? data.zodiac : data.tarot;
+  const entry = section && section[key];
+  const list = mode === 'zodiac' ? ZODIAC_LIST : TAROT_LIST;
+  const icon = (list.find(x => x.key === key) || {}).icon || '✨';
+
+  if (!entry) {
+    box.innerHTML = `<p class="fortune-subtitle">這個結果今天還沒準備好，請重新選擇。</p>
+      <button class="summary-back-btn" id="fortuneBackBtn">← 重新選擇</button>`;
+    box.querySelector('#fortuneBackBtn').addEventListener('click', () => { fortuneState.view = 'select'; renderFortuneView(); });
+    return;
+  }
+
+  const validDrinks = (entry.drinks || []).map(name => findMenuItem(name)).filter(Boolean)
+    .map(r => r.item);
+
+  box.innerHTML = `
+    <button class="fortune-link-btn" id="fortuneBackBtn">← 重新選擇</button>
+    <div class="fortune-result-hero">
+      <div class="fortune-result-icon">${icon}</div>
+      <div class="fortune-result-name">${key}</div>
+      <div class="fortune-result-text">${entry.fortune}</div>
+    </div>
+    ${validDrinks.length ? `
+      <span class="fortune-rec-label">為你推薦：</span>
+      <div class="fortune-rec-list">
+        ${validDrinks.map(d => `
+          <div class="fortune-rec-card" data-name="${d.name}">
+            <span class="fortune-rec-name">${d.name}</span>
+            <span class="fortune-rec-price">${d.price}</span>
+          </div>`).join('')}
+      </div>` : ''}
+    <button class="summary-confirm-btn" id="fortuneOrderOwnBtn">🧋 都不喜歡？直接看完整菜單</button>`;
+
+  box.querySelector('#fortuneBackBtn').addEventListener('click', () => { fortuneState.view = 'select'; renderFortuneView(); });
+  box.querySelectorAll('.fortune-rec-card').forEach(card => {
+    card.addEventListener('click', () => { closeFortuneOverlay(); openShopAtItem(card.dataset.name); });
+  });
+  box.querySelector('#fortuneOrderOwnBtn').addEventListener('click', () => { closeFortuneOverlay(); openShop(); });
+}
+
 /* ══════════════════════════════════════════════
    EVENT LISTENERS — name entry
 ══════════════════════════════════════════════ */
@@ -668,6 +702,11 @@ document.getElementById('changeNameBtn').addEventListener('click', () => {
    EVENT LISTENERS — ordering flow
 ══════════════════════════════════════════════ */
 document.getElementById('joinerOrderBtn').addEventListener('click', () => openShop());
+document.getElementById('joinerFortuneBtn').addEventListener('click', () => openFortuneOverlay());
+
+document.getElementById('fortuneOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('fortuneOverlay')) closeFortuneOverlay();
+});
 
 document.getElementById('modalClose').addEventListener('click', closeModal);
 document.getElementById('menuModal').addEventListener('click', e => {
@@ -849,6 +888,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     document.getElementById('summaryOverlay').classList.remove('open');
     document.getElementById('orderMgrOverlay').classList.remove('open');
+    document.getElementById('fortuneOverlay').classList.remove('open');
     if (orderUnsub) { orderUnsub(); orderUnsub = null; }
     closeModal();
   }

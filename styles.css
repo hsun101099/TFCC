@@ -124,6 +124,70 @@ body {
 }
 .joiner-order-btn:hover { background: var(--brown-dark); }
 
+.joiner-fortune-btn {
+  width: 100%; padding: 14px; border: 1.5px solid var(--brown);
+  border-radius: 16px; background: var(--white); color: var(--brown);
+  font-size: 0.92rem; font-weight: 700; cursor: pointer;
+  transition: all 0.2s;
+}
+.joiner-fortune-btn:hover { background: var(--warm); }
+
+/* ══════════════════════════════
+   Daily Drink Fortune
+══════════════════════════════ */
+.fortune-subtitle { font-size: 0.8rem; color: var(--text-light); margin-bottom: 18px; line-height: 1.6; }
+.fortune-mode-grid { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+.fortune-mode-btn {
+  display: flex; align-items: center; gap: 12px;
+  padding: 16px; border: 1.5px solid var(--warm); border-radius: 16px;
+  background: var(--white); cursor: pointer; transition: all 0.15s; text-align: left;
+}
+.fortune-mode-btn:hover { border-color: var(--brown); background: var(--warm); }
+.fortune-mode-icon { font-size: 1.6rem; flex-shrink: 0; }
+.fortune-mode-name { font-size: 0.92rem; font-weight: 700; color: var(--text); }
+.fortune-mode-desc { font-size: 0.72rem; color: var(--text-light); margin-top: 2px; }
+
+.fortune-pick-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+.fortune-pick-btn {
+  padding: 12px 6px; border: 1.5px solid var(--warm); border-radius: 14px;
+  background: var(--white); cursor: pointer; transition: all 0.15s; text-align: center;
+}
+.fortune-pick-btn:hover { border-color: var(--brown); background: var(--warm); }
+.fortune-pick-icon { font-size: 1.3rem; }
+.fortune-pick-name { font-size: 0.74rem; font-weight: 600; color: var(--text); margin-top: 2px; }
+
+.fortune-draw-btn {
+  width: 100%; padding: 40px 16px; border: 2px dashed var(--brown-light);
+  border-radius: 16px; background: var(--warm); color: var(--brown);
+  font-size: 1rem; font-weight: 700; cursor: pointer; transition: all 0.2s; margin-bottom: 14px;
+}
+.fortune-draw-btn:hover { background: #ecd9ad; }
+
+.fortune-result-hero {
+  background: linear-gradient(135deg, var(--warm), var(--cream));
+  border-radius: 16px; padding: 18px; text-align: center; margin-bottom: 14px;
+}
+.fortune-result-icon { font-size: 2.2rem; margin-bottom: 6px; }
+.fortune-result-name { font-family: 'Noto Serif TC', serif; font-size: 1.1rem; font-weight: 900; color: var(--brown); margin-bottom: 8px; }
+.fortune-result-text { font-size: 0.85rem; color: var(--text); line-height: 1.7; }
+
+.fortune-rec-label { font-size: 0.78rem; font-weight: 700; color: var(--brown); margin-bottom: 8px; display: block; }
+.fortune-rec-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+.fortune-rec-card {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--white); border-radius: 12px; padding: 12px 14px;
+  border: 1.5px solid var(--warm); cursor: pointer; transition: all 0.15s;
+}
+.fortune-rec-card:hover { border-color: var(--brown); box-shadow: 0 2px 10px rgba(139,94,60,0.1); }
+.fortune-rec-name { font-size: 0.88rem; font-weight: 600; color: var(--text); }
+.fortune-rec-price { font-size: 0.8rem; font-weight: 700; color: var(--brown); }
+
+.fortune-actions { display: flex; flex-direction: column; gap: 8px; }
+.fortune-link-btn {
+  background: none; border: none; color: var(--text-light); font-size: 0.78rem;
+  text-decoration: underline; cursor: pointer; padding: 6px;
+}
+
 /* ══════════════════════════════
    3-Step Modal
 ══════════════════════════════ */
