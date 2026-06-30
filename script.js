@@ -201,14 +201,11 @@ async function ensureSession(code) {
 }
 
 async function initApp() {
+  // Always start at the name screen — a shared device shouldn't silently
+  // resume as whoever last typed their name, just pre-fill it as a hint.
   const savedName = localStorage.getItem('tfcc_drink_name');
-  if (savedName) {
-    session.name = savedName;
-    try { await ensureSession(session.code); } catch (e) { /* offline retry on submit */ }
-    enterMain();
-  } else {
-    showNameOverlay();
-  }
+  if (savedName) document.getElementById('nameInput').value = savedName;
+  showNameOverlay();
 }
 
 function showNameOverlay() {

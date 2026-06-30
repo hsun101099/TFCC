@@ -214,12 +214,13 @@ body {
 .next-btn { background: var(--brown); color: var(--white); }
 .next-btn:hover { background: var(--brown-dark); }
 .cart-pill {
-  flex: 1; background: var(--warm); border-radius: 20px;
-  padding: 8px 14px; text-align: center;
-  font-size: 0.8rem; font-weight: 600; color: var(--brown);
-  display: none;
+  flex: 1; background: var(--brown); border-radius: 20px;
+  padding: 8px 14px; text-align: center; cursor: pointer;
+  font-size: 0.8rem; font-weight: 600; color: var(--white);
+  display: none; transition: background 0.2s;
 }
 .cart-pill.visible { display: block; }
+.cart-pill.visible:hover { background: var(--brown-dark); }
 
 /* ══════════════════════════════
    STEP 1 — Menu Board
