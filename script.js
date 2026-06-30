@@ -774,8 +774,9 @@ function renderRandomView() {
     const narrowBtn = box.querySelector('#randomNarrowBtn');
     if (narrowBtn) {
       narrowBtn.addEventListener('click', () => {
-        randomState.count -= 1;
-        randomState.drinks = pickRandomDrinks(randomState.count);
+        const dropIdx = Math.floor(Math.random() * randomState.drinks.length);
+        randomState.drinks = randomState.drinks.filter((_, i) => i !== dropIdx);
+        randomState.count = randomState.drinks.length;
         renderRandomView();
       });
     }
