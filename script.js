@@ -565,7 +565,101 @@ async function loadFortuneData() {
   return fortuneDataCache;
 }
 
-const fortuneState = { view: 'tarot' };
+// Combination-analysis engine for the 3-card draw: each tarot card carries a
+// "flavor energy" vector (data/fortune-config.js), each drink is scored against
+// the same tag space from its category + name, and the 3 drawn cards' vectors
+// are summed so the recommendation reflects the *combination*, not any single
+// card — this runs instantly client-side for any of the 220 possible 3-card
+// draws instead of needing all of them pre-generated.
+const DRINK_TAGS = ['classic', 'milky', 'fruity', 'fresh', 'indulgent', 'comfort', 'bold'];
+
+function categoryBaseTags(title) {
+  if (title.includes('找好茶')) return { classic: 1, fresh: 0.4 };
+  if (title.includes('找奶茶')) return { milky: 1, comfort: 0.6 };
+  if (title.includes('找口感')) return { bold: 1, indulgent: 0.4 };
+  if (title.includes('紅茶拿鐵')) return { milky: 1, indulgent: 0.6, comfort: 0.4 };
+  if (title.includes('找新鮮')) return { fresh: 1, fruity: 0.6 };
+  if (title.includes('找冰淇淋')) return { indulgent: 1, fruity: 0.5, bold: 0.3 };
+  return {};
+}
+
+function keywordTags(name) {
+  const tags = {};
+  const add = (key, val) => { tags[key] = (tags[key] || 0) + val; };
+  if (/檸檬|金桔|葡萄柚|鮮柚|柚子|梅/.test(name)) { add('fruity', 0.6); add('fresh', 0.6); }
+  if (/芒果|荔枝|旺來|養樂多/.test(name)) add('fruity', 0.7);
+  if (/奶|拿鐵|瑪奇朵|鮮奶/.test(name)) add('milky', 0.6);
+  if (/布丁|冰淇淋/.test(name)) add('indulgent', 0.7);
+  if (/珍珠|波霸|椰果|珍波椰|混珠|珍椰|波椰/.test(name)) add('bold', 0.6);
+  if (/麵茶|阿華田/.test(name)) add('comfort', 0.7);
+  if (/^(阿薩姆紅茶|四季春青茶|黃金烏龍|茉莉綠茶|8冰綠|8冰茶)$/.test(name)) add('classic', 0.5);
+  return tags;
+}
+
+function drinkTagVector(item, categoryTitle) {
+  const vector = categoryBaseTags(categoryTitle);
+  const kw = keywordTags(item.name);
+  Object.keys(kw).forEach(k => { vector[k] = (vector[k] || 0) + kw[k]; });
+  return vector;
+}
+
+function dotProduct(a, b) {
+  let sum = 0;
+  DRINK_TAGS.forEach(tag => { sum += (a[tag] || 0) * (b[tag] || 0); });
+  return sum;
+}
+
+function scoreDrinksForCards(cards) {
+  const combined = {};
+  cards.forEach(card => {
+    const v = card.traits || {};
+    Object.keys(v).forEach(k => { combined[k] = (combined[k] || 0) + v[k]; });
+  });
+  const data = menuData[SHOP_ID];
+  const scored = [];
+  data.categories.forEach(cat => {
+    cat.items.forEach(item => {
+      const vector = drinkTagVector(item, cat.title);
+      scored.push({ item, vector, score: dotProduct(vector, combined) });
+    });
+  });
+  scored.sort((a, b) => b.score - a.score);
+  return { combined, scored };
+}
+
+const FORTUNE_INSIGHT_TEXT = {
+  classic: '三張牌透露出沉穩內斂的氣場，今天最適合喝原汁原味、不搶戲的經典好茶。',
+  milky: '三張牌交織出溫潤包容的能量，今天的你很適合來杯香醇的奶茶系，安撫一整天的疲憊。',
+  fruity: '三張牌充滿活潑外向的氣息，今天最對味的是酸甜多汁的水果茶，讓心情也跟著清爽起來。',
+  fresh: '三張牌帶著清晰俐落的能量，今天適合喝點清爽不甜膩的茶飲，讓思緒保持透徹。',
+  indulgent: '三張牌散發著犒賞自己的氛圍，今天就大方一點，選杯豐富有層次的特調飲品吧。',
+  comfort: '三張牌流露出溫柔療癒的氣息，今天適合喝點溫暖香甜、像擁抱一樣的飲品。',
+  bold: '三張牌充滿衝勁與行動力，今天最適合喝口感豐富、嚼勁十足的飲品來呼應你的能量。',
+};
+
+// Picks the tag that best explains the *actual* top-recommended drink (not just
+// the raw combined vector in isolation) so the insight text never contradicts
+// the drinks shown below it when two or more tags tie in the combined vector.
+function dominantTagInsight(combined, topVector) {
+  let best = null, bestVal = -Infinity;
+  DRINK_TAGS.forEach(tag => {
+    const weight = topVector ? (topVector[tag] || 0) : 1;
+    const v = (combined[tag] || 0) * weight;
+    if (v > bestVal) { bestVal = v; best = tag; }
+  });
+  return FORTUNE_INSIGHT_TEXT[best] || '今天的牌組能量平衡，挑一杯讓自己順眼的飲品就對了。';
+}
+
+function pickThreeTarotCards() {
+  const pool = [...TAROT_LIST];
+  const picked = [];
+  for (let i = 0; i < 3 && pool.length; i++) {
+    picked.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+  }
+  return picked;
+}
+
+const fortuneState = { view: 'tarot', cards: [], flipped: [] };
 
 async function openFortuneOverlay() {
   fortuneState.view = 'tarot';
@@ -590,66 +684,86 @@ async function renderFortuneView() {
     return;
   }
 
+  fortuneState.cards = pickThreeTarotCards();
+  fortuneState.flipped = [false, false, false];
+
   box.innerHTML = `
     <h2 class="summary-title">🔮 今日飲料運勢</h2>
-    <p class="fortune-subtitle">靜下心，點擊卡牌，讓今天的塔羅指引你該喝什麼 ✨</p>
-    <div class="tarot-stage">
-      <button class="tarot-card" id="tarotCard" aria-label="點擊抽牌">
-        <div class="tarot-card-inner">
-          <div class="tarot-card-face tarot-card-back">
-            <span class="tarot-card-back-star tarot-card-back-star-1">✦</span>
-            <span class="tarot-card-back-star tarot-card-back-star-2">✦</span>
-            <span class="tarot-card-back-star tarot-card-back-star-3">✦</span>
-            <span class="tarot-card-back-emblem">🔮</span>
+    <p class="fortune-subtitle">靜下心，依序翻開三張塔羅牌，讓組合的能量指引你今天該喝什麼 ✨</p>
+    <div class="tarot-stage tarot-stage-3">
+      ${[0, 1, 2].map(i => `
+        <button class="tarot-card" data-idx="${i}" aria-label="點擊翻開第${i + 1}張牌">
+          <div class="tarot-card-inner">
+            <div class="tarot-card-face tarot-card-back">
+              <span class="tarot-card-back-star tarot-card-back-star-1">✦</span>
+              <span class="tarot-card-back-star tarot-card-back-star-2">✦</span>
+              <span class="tarot-card-back-star tarot-card-back-star-3">✦</span>
+              <span class="tarot-card-back-emblem">🔮</span>
+            </div>
+            <div class="tarot-card-face tarot-card-front" id="tarotCardFront${i}"></div>
           </div>
-          <div class="tarot-card-face tarot-card-front" id="tarotCardFront"></div>
-        </div>
-      </button>
+        </button>`).join('')}
     </div>
-    <p class="fortune-hint" id="tarotHint">點擊卡牌抽牌</p>
+    <p class="fortune-hint" id="tarotHint">依序點擊三張卡牌（0／3）</p>
     <button class="fortune-link-btn" id="fortuneSkipBtn">不用了，直接點餐去 →</button>`;
 
   box.querySelector('#fortuneSkipBtn').addEventListener('click', () => { closeFortuneOverlay(); openShop(); });
 
-  const cardBtn = box.querySelector('#tarotCard');
-  cardBtn.addEventListener('click', () => {
-    if (cardBtn.classList.contains('flipped')) return;
-    const card = TAROT_LIST[Math.floor(Math.random() * TAROT_LIST.length)];
-    box.querySelector('#tarotCardFront').innerHTML =
-      `<span class="tarot-card-icon">${card.icon}</span><span class="tarot-card-name">${card.key}</span>`;
-    cardBtn.classList.add('flipped');
-    box.querySelector('#tarotHint').textContent = '揭曉中…';
-    setTimeout(() => renderFortuneResult(card.key), 750);
+  box.querySelectorAll('.tarot-card').forEach(cardBtn => {
+    cardBtn.addEventListener('click', () => {
+      const idx = Number(cardBtn.dataset.idx);
+      if (fortuneState.flipped[idx]) return;
+      const card = fortuneState.cards[idx];
+      box.querySelector(`#tarotCardFront${idx}`).innerHTML =
+        `<span class="tarot-card-icon">${card.icon}</span><span class="tarot-card-name">${card.key}</span>`;
+      cardBtn.classList.add('flipped');
+      fortuneState.flipped[idx] = true;
+
+      const flippedCount = fortuneState.flipped.filter(Boolean).length;
+      const hint = box.querySelector('#tarotHint');
+      if (flippedCount < 3) {
+        hint.textContent = `依序點擊三張卡牌（${flippedCount}／3）`;
+      } else {
+        hint.textContent = '揭曉中…';
+        setTimeout(() => renderFortuneCombined(), 750);
+      }
+    });
   });
 }
 
-async function renderFortuneResult(key) {
+async function renderFortuneCombined() {
   const box = document.getElementById('fortuneBox');
   const data = await loadFortuneData();
-  const entry = data && data.tarot && data.tarot[key];
-  const icon = (TAROT_LIST.find(x => x.key === key) || {}).icon || '✨';
+  const cards = fortuneState.cards;
 
-  if (!entry) {
-    box.innerHTML = `<p class="fortune-subtitle">這張牌今天還沒準備好，請重新抽一張。</p>
-      <button class="summary-back-btn" id="fortuneBackBtn">← 重新抽牌</button>`;
-    box.querySelector('#fortuneBackBtn').addEventListener('click', () => renderFortuneView());
-    return;
-  }
+  const { combined, scored } = scoreDrinksForCards(cards);
+  const seen = new Set();
+  const topDrinks = [];
+  scored.forEach(({ item }) => {
+    if (seen.has(item.name)) return;
+    seen.add(item.name);
+    if (topDrinks.length < 5) topDrinks.push(item);
+  });
+  const insight = dominantTagInsight(combined, scored[0] && scored[0].vector);
 
-  const validDrinks = (entry.drinks || []).map(name => findMenuItem(name)).filter(Boolean)
-    .map(r => r.item);
+  const cardNotes = cards.map(card => {
+    const entry = data && data.tarot && data.tarot[card.key];
+    return entry ? `<li><span class="fortune-note-icon">${card.icon}</span><b>${card.key}</b>：${entry.fortune}</li>` : '';
+  }).filter(Boolean).join('');
 
   box.innerHTML = `
     <button class="fortune-link-btn" id="fortuneBackBtn">← 重新抽牌</button>
     <div class="fortune-result-hero">
-      <div class="fortune-result-icon">${icon}</div>
-      <div class="fortune-result-name">${key}</div>
-      <div class="fortune-result-text">${entry.fortune}</div>
+      <div class="fortune-result-cards">
+        ${cards.map(c => `<span class="fortune-result-mini">${c.icon} ${c.key}</span>`).join('')}
+      </div>
+      <div class="fortune-result-text">${insight}</div>
     </div>
-    ${validDrinks.length ? `
-      <span class="fortune-rec-label">為你推薦：</span>
+    ${cardNotes ? `<ul class="fortune-card-notes">${cardNotes}</ul>` : ''}
+    ${topDrinks.length ? `
+      <span class="fortune-rec-label">綜合三張牌分析，為你精準推薦：</span>
       <div class="fortune-rec-list">
-        ${validDrinks.map(d => `
+        ${topDrinks.map(d => `
           <div class="fortune-rec-card" data-name="${d.name}">
             <span class="fortune-rec-name">${d.name}</span>
             <span class="fortune-rec-price">${d.price}</span>
