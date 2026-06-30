@@ -19,8 +19,8 @@ const SHOP_ID = '50lan';
 const menuData = {
   '50lan': {
     name: '50嵐', desc: '好茶陪伴你的日常', logo: 'images/logo-50lan.png',
-    sweetness: ['無糖','微糖','半糖','少糖','正常'],
-    ice: ['去冰','微冰','少冰','正常冰','溫','熱'],
+    sweetness: ['無糖','9分甜','8分甜','少糖','6分甜','半糖','4分甜','微糖','2分甜','1分甜','正常甜'],
+    ice: ['正常冰','少冰','微冰','去冰','常溫','溫','熱'],
     // 非純茶類飲品（奶茶/拿鐵/瑪奇朵等）可免費加珍珠、波霸、椰果或其混搭組合；
     // 純茶類（找好茶／找新鮮）加同樣的料需額外收費；布丁、香草冰淇淋因需給整份，一律額外收費。
     toppings: [
@@ -431,7 +431,7 @@ function renderStep3() {
 
       ${hasToppings ? `
       <div class="customize-section">
-        <label class="customize-label">➕ 加料${item.isTea ? '（純茶類加料需額外收費）' : '（珍珠／波霸／椰果及其混搭組合免費加！）'}</label>
+        <label class="customize-label">➕ 加料（單選一種${item.isTea ? '，純茶類加料需額外收費' : '，珍珠／波霸／椰果及混搭組合免費加！'}）</label>
         <div class="toppings-grid" id="toppingsGrid">
           ${data.toppings.map(t => {
             const price = item.isTea ? t.priceTea : t.priceMilk;
@@ -499,18 +499,22 @@ function renderStep3() {
   });
 
   if (hasToppings) {
+    // Toppings are single-select — the combo options (混珠/珍波椰/珍椰/波椰)
+    // already represent picking multiple QQ toppings together, so there's
+    // no need to allow stacking separate picks on top of each other.
     panel.querySelectorAll('.topping-row').forEach(row => {
       row.addEventListener('click', () => {
-        row.classList.toggle('checked');
-        const name = row.dataset.name;
-        const price = parseInt(row.dataset.price);
-        const icon = row.querySelector('.topping-check-icon');
-        if (row.classList.contains('checked')) {
-          state.pendingItem.toppings.push({ name, price });
-          icon.textContent = '✓';
+        const wasChecked = row.classList.contains('checked');
+        panel.querySelectorAll('.topping-row').forEach(r => {
+          r.classList.remove('checked');
+          r.querySelector('.topping-check-icon').textContent = '';
+        });
+        if (wasChecked) {
+          state.pendingItem.toppings = [];
         } else {
-          state.pendingItem.toppings = state.pendingItem.toppings.filter(t => t.name !== name);
-          icon.textContent = '';
+          row.classList.add('checked');
+          row.querySelector('.topping-check-icon').textContent = '✓';
+          state.pendingItem.toppings = [{ name: row.dataset.name, price: parseInt(row.dataset.price) }];
         }
       });
     });
