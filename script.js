@@ -721,13 +721,14 @@ async function renderZodiacResult(key) {
     </div>`;
 
   box.querySelector('#fortuneBackBtn').addEventListener('click', () => renderFortuneView());
-  renderFortuneQuiz(box);
+  renderFortuneQuiz(box, key);
 }
 
 const quizAnswers = {};
 
-function renderFortuneQuiz(box) {
+function renderFortuneQuiz(box, zodiacKey) {
   Object.keys(quizAnswers).forEach(k => delete quizAnswers[k]);
+  quizAnswers._zodiacKey = zodiacKey;
 
   const quizHtml = `
     <div class="fortune-quiz" id="fortuneQuiz">
@@ -765,7 +766,7 @@ function renderFortuneQuiz(box) {
       box.querySelectorAll(`.fortune-quiz-opt[data-q="${q}"]`).forEach(b => {
         b.classList.toggle('selected', b === btn);
       });
-      if (Object.keys(quizAnswers).length === 3) {
+      if (quizAnswers.style && quizAnswers.topping && quizAnswers.base) {
         renderFortuneQuizResult(box);
       }
     });
@@ -773,30 +774,41 @@ function renderFortuneQuiz(box) {
 }
 
 function renderFortuneQuizResult(box) {
-  const { style, topping, base } = quizAnswers;
+  const { style, topping, base, _zodiacKey } = quizAnswers;
+  const wantTopping = topping === 'yes';
+  const wantMilk = base === 'milk';
+
+  // Style gives a gentle base signal; zodiac at 4× is the main driver so each
+  // sign gets genuinely different results even with identical quiz answers.
   const pref = {};
   const add = (k, v) => { pref[k] = (pref[k] || 0) + v; };
+  if (style === 'fresh') { add('fresh', 1); add('classic', 0.5); add('fruity', 0.25); }
+  else { add('milky', 0.75); add('indulgent', 0.75); add('comfort', 0.5); }
 
-  if (style === 'fresh') { add('fresh', 2); add('classic', 1); }
-  else { add('milky', 1); add('indulgent', 1); add('fruity', 0.5); add('comfort', 0.5); }
+  const zodiac = ZODIAC_LIST.find(z => z.key === _zodiacKey);
+  if (zodiac && zodiac.traits) {
+    Object.entries(zodiac.traits).forEach(([k, v]) => add(k, v * 4));
+  }
 
-  if (topping === 'yes') add('bold', 2);
-  else add('bold', -2);
-
-  if (base === 'milk') { add('milky', 2); add('comfort', 1); }
-  else { add('classic', 1); add('fruity', 1); add('fresh', 1); }
-
-  const scored = [];
+  // Hard filter: topping = any item whose name contains a topping word
+  // Milk = any item whose name contains a dairy/latte word
+  const scoreAll = [];
   menuData[SHOP_ID].categories.forEach(cat => {
     cat.items.forEach(item => {
-      scored.push({ item, score: dotProduct(drinkTagVector(item, cat.title), pref) });
+      const hasToppings = /珍珠|波霸|椰果|布丁|珍波椰/.test(item.name);
+      const isMilky = /奶|拿鐵|瑪奇朵|鮮奶|阿華田/.test(item.name);
+      scoreAll.push({ item, hasToppings, isMilky, score: dotProduct(drinkTagVector(item, cat.title), pref) });
     });
   });
-  scored.sort((a, b) => b.score - a.score);
+  scoreAll.sort((a, b) => b.score - a.score);
+
+  const filtered = scoreAll.filter(r => r.hasToppings === wantTopping && r.isMilky === wantMilk);
+  // Fallback: if filtered pool too small, use everything sorted by score
+  const pool = filtered.length >= 3 ? filtered : scoreAll;
 
   const seen = new Set();
   const top3 = [];
-  scored.forEach(({ item }) => {
+  pool.forEach(({ item }) => {
     if (!seen.has(item.name) && top3.length < 3) { seen.add(item.name); top3.push(item); }
   });
 

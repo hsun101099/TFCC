@@ -4,11 +4,26 @@
    generation script (scripts/generate-fortune.js), so the keys the
    AI is asked to fill in always match what the UI expects.
 ══════════════════════════════════════════════ */
+// traits: each zodiac's "flavor personality" — blended into the quiz scoring so
+// the same quiz answers yield different drinks for different signs.
+// Tags: classic / milky / fruity / fresh / indulgent / comfort / bold
+// traits drive zodiac-specific drink scoring inside the quiz (same tag space as
+// tarot: classic/milky/fruity/fresh/indulgent/comfort/bold).
+// Signs were deliberately made distinct — pairs that felt personality-similar
+// still diverge on at least one key axis so they recommend different drinks.
 const ZODIAC_LIST = [
-  { key: '牡羊座', icon: '♈' }, { key: '金牛座', icon: '♉' }, { key: '雙子座', icon: '♊' },
-  { key: '巨蟹座', icon: '♋' }, { key: '獅子座', icon: '♌' }, { key: '處女座', icon: '♍' },
-  { key: '天秤座', icon: '♎' }, { key: '天蠍座', icon: '♏' }, { key: '射手座', icon: '♐' },
-  { key: '摩羯座', icon: '♑' }, { key: '水瓶座', icon: '♒' }, { key: '雙魚座', icon: '♓' },
+  { key: '牡羊座', icon: '♈', traits: { bold: 1.2, fruity: 0.6 } },           // 衝勁+果味
+  { key: '金牛座', icon: '♉', traits: { comfort: 1.2, classic: 0.8 } },        // 踏實+暖心
+  { key: '雙子座', icon: '♊', traits: { fruity: 1, fresh: 1 } },               // 清新+多變
+  { key: '巨蟹座', icon: '♋', traits: { comfort: 1.4, milky: 0.8 } },          // 療癒+包覆感
+  { key: '獅子座', icon: '♌', traits: { indulgent: 1.4, bold: 0.6 } },         // 豐盛+有存在感
+  { key: '處女座', icon: '♍', traits: { classic: 1.4, fresh: 0.4 } },          // 純粹+精準
+  { key: '天秤座', icon: '♎', traits: { fresh: 1, fruity: 0.6, classic: 0.4 } }, // 平衡+清雅
+  { key: '天蠍座', icon: '♏', traits: { indulgent: 1, comfort: 1, bold: 0.4 } }, // 深邃+層次
+  { key: '射手座', icon: '♐', traits: { fruity: 1.4, fresh: 0.3 } },           // 熱帶+冒險
+  { key: '摩羯座', icon: '♑', traits: { classic: 1.2, comfort: 0.6 } },        // 經典+穩健
+  { key: '水瓶座', icon: '♒', traits: { bold: 1, indulgent: 0.8, fresh: 0.4 } }, // 獨特+有態度
+  { key: '雙魚座', icon: '♓', traits: { comfort: 0.8, fruity: 1, fresh: 0.5 } }, // 夢幻+柔甜
 ];
 
 // traits: each card's "flavor energy" used to score drinks for the 3-card combo
