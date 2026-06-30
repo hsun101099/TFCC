@@ -760,7 +760,6 @@ document.getElementById('summaryBack').addEventListener('click', () => {
    ORDER MANAGER
 ══════════════════════════════════════════════ */
 let orderUnsub = null;
-let cachedSnap = null;
 
 document.getElementById('orderMgrBtn').addEventListener('click', () => showOrderManager());
 
@@ -773,7 +772,6 @@ function showOrderManager() {
   orderUnsub = db.collection('sessions').doc(session.code)
     .collection('orders').orderBy('time','asc')
     .onSnapshot(snap => {
-      cachedSnap = snap;
       renderMembersView(snap);
     }, () => {
       content.innerHTML = '<p style="text-align:center;color:#c0392b;padding:20px">載入失敗</p>';
@@ -798,11 +796,10 @@ function renderMembersView(snap) {
 
   content.innerHTML = Object.entries(grouped).map(([member, orders]) =>
     orders.map(order => {
-      const canDel = member === session.name;
       return `<div class="order-member-group">
         <div class="order-member-name">
           <span>${member}（$${order.total || 0}）</span>
-          ${canDel ? `<button class="delete-order-btn" data-id="${order._id}">刪除</button>` : ''}
+          <button class="delete-order-btn" data-id="${order._id}" data-summary="${(order.items||[]).map(it => `${it.name} ×${it.qty}`).join('、').replace(/"/g, '&quot;')}">刪除</button>
         </div>
         ${(order.items||[]).map(it => `
           <div class="order-item-mini">
@@ -819,7 +816,8 @@ function renderMembersView(snap) {
 
   content.querySelectorAll('.delete-order-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
-      if (!confirm('確定要刪除此筆訂單？')) return;
+      const summary = btn.dataset.summary || '這筆訂單';
+      if (!confirm(`確定要刪除「${summary}」這杯飲料嗎？`)) return;
       await db.collection('sessions').doc(session.code).collection('orders').doc(btn.dataset.id).delete();
       showToast('已刪除訂單');
     });
@@ -827,57 +825,6 @@ function renderMembersView(snap) {
 
   document.getElementById('orderMgrTotal').textContent = `$${grandTotal}`;
 }
-
-function generateMembersText() {
-  if (!cachedSnap || cachedSnap.empty) return '目前沒有訂單';
-  const grouped = {};
-  let grandTotal = 0;
-  cachedSnap.docs.forEach(doc => {
-    const d = doc.data();
-    if (!grouped[d.memberName]) grouped[d.memberName] = [];
-    grouped[d.memberName].push(d);
-    grandTotal += d.total || 0;
-  });
-  let cups = 0;
-  let text = `📋 ${menuData[SHOP_ID].name} 訂單彙整\n━━━━━━━━━━━━\n`;
-  Object.entries(grouped).forEach(([member, orders]) => {
-    text += `\n👤 ${member}\n`;
-    orders.forEach(order => {
-      (order.items||[]).forEach(it => {
-        cups += it.qty;
-        text += `  ${it.size} ${it.name} ${it.sweetness}${it.ice} ×${it.qty}（$${(it.unitPrice||0)*it.qty}）\n`;
-        if (it.toppings?.length) text += `    加料：${it.toppings.map(t=>t.name).join('、')}\n`;
-        if (it.notes) text += `    備註：${it.notes}\n`;
-      });
-    });
-  });
-  text += `\n━━━━━━━━━━━━\n📊 共 ${cups} 杯 ｜ 合計 $${grandTotal}`;
-  return text;
-}
-
-function generateShopText() {
-  if (!cachedSnap || cachedSnap.empty) return '目前沒有訂單';
-  const items = {};
-  cachedSnap.docs.forEach(doc => {
-    const d = doc.data();
-    (d.items||[]).forEach(it => {
-      const key = `${it.size} ${it.name} ${it.sweetness}${it.ice}${it.toppings?.length ? ' +' + it.toppings.map(t=>t.name).join('+') : ''}${it.notes ? ' ('+it.notes+')' : ''}`;
-      items[key] = (items[key] || 0) + it.qty;
-    });
-  });
-  const total = Object.values(items).reduce((s,n) => s + n, 0);
-  let text = `🧋 ${menuData[SHOP_ID].name}（共 ${total} 杯）\n━━━━━━━━━━━━\n`;
-  Object.entries(items).forEach(([desc, qty]) => { text += `${desc} ×${qty}\n`; });
-  return text.trim();
-}
-
-document.getElementById('copyMembersBtn').addEventListener('click', () => {
-  navigator.clipboard.writeText(generateMembersText()).then(() => showToast('✅ 已複製成員清單'));
-});
-
-document.getElementById('copyShopBtn').addEventListener('click', () => {
-  navigator.clipboard.writeText(generateShopText()).then(() => showToast('✅ 已複製叫貨清單'));
-});
 
 document.getElementById('orderMgrClose').addEventListener('click', () => {
   document.getElementById('orderMgrOverlay').classList.remove('open');
