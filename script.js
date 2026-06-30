@@ -712,31 +712,111 @@ async function renderZodiacResult(key) {
     return;
   }
 
-  const validDrinks = (entry.drinks || []).map(name => findMenuItem(name)).filter(Boolean).map(r => r.item);
-
   box.innerHTML = `
     <button class="fortune-link-btn" id="fortuneBackBtn">← 換個星座</button>
     <div class="fortune-result-hero">
       <div class="fortune-result-icon">${zodiac.icon}</div>
       <div class="fortune-result-name">${key}</div>
       <div class="fortune-result-text">${entry.fortune}</div>
-    </div>
-    ${validDrinks.length ? `
-      <span class="fortune-rec-label">今日推薦飲品：</span>
-      <div class="fortune-rec-list">
-        ${validDrinks.map(d => `
-          <div class="fortune-rec-card" data-name="${d.name}">
-            <span class="fortune-rec-name">${d.name}</span>
-            <span class="fortune-rec-price">${d.price}</span>
-          </div>`).join('')}
-      </div>` : ''}
-    <button class="summary-confirm-btn" id="fortuneOrderOwnBtn">🧋 都不喜歡？直接看完整菜單</button>`;
+    </div>`;
 
   box.querySelector('#fortuneBackBtn').addEventListener('click', () => renderFortuneView());
-  box.querySelectorAll('.fortune-rec-card').forEach(card => {
+  renderFortuneQuiz(box);
+}
+
+const quizAnswers = {};
+
+function renderFortuneQuiz(box) {
+  Object.keys(quizAnswers).forEach(k => delete quizAnswers[k]);
+
+  const quizHtml = `
+    <div class="fortune-quiz" id="fortuneQuiz">
+      <p class="fortune-quiz-title">✨ 讓我幫你找今天最適合的飲品</p>
+      <div class="fortune-quiz-q">
+        <span class="fortune-quiz-label">口感風格</span>
+        <div class="fortune-quiz-opts">
+          <button class="fortune-quiz-opt" data-q="style" data-val="fresh">🍃 清爽不甜膩</button>
+          <button class="fortune-quiz-opt" data-q="style" data-val="rich">🧋 濃郁香醇</button>
+        </div>
+      </div>
+      <div class="fortune-quiz-q">
+        <span class="fortune-quiz-label">加料偏好</span>
+        <div class="fortune-quiz-opts">
+          <button class="fortune-quiz-opt" data-q="topping" data-val="yes">🫧 有珍珠 / 波霸 / 料</button>
+          <button class="fortune-quiz-opt" data-q="topping" data-val="no">🫙 純喝不加料</button>
+        </div>
+      </div>
+      <div class="fortune-quiz-q">
+        <span class="fortune-quiz-label">飲品基底</span>
+        <div class="fortune-quiz-opts">
+          <button class="fortune-quiz-opt" data-q="base" data-val="milk">🥛 奶類</button>
+          <button class="fortune-quiz-opt" data-q="base" data-val="tea">🍵 茶 / 果茶類</button>
+        </div>
+      </div>
+      <div id="quizResult"></div>
+    </div>`;
+
+  box.insertAdjacentHTML('beforeend', quizHtml);
+
+  box.querySelectorAll('.fortune-quiz-opt').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const q = btn.dataset.q;
+      quizAnswers[q] = btn.dataset.val;
+      box.querySelectorAll(`.fortune-quiz-opt[data-q="${q}"]`).forEach(b => {
+        b.classList.toggle('selected', b === btn);
+      });
+      if (Object.keys(quizAnswers).length === 3) {
+        renderFortuneQuizResult(box);
+      }
+    });
+  });
+}
+
+function renderFortuneQuizResult(box) {
+  const { style, topping, base } = quizAnswers;
+  const pref = {};
+  const add = (k, v) => { pref[k] = (pref[k] || 0) + v; };
+
+  if (style === 'fresh') { add('fresh', 2); add('classic', 1); }
+  else { add('milky', 1); add('indulgent', 1); add('fruity', 0.5); add('comfort', 0.5); }
+
+  if (topping === 'yes') add('bold', 2);
+  else add('bold', -2);
+
+  if (base === 'milk') { add('milky', 2); add('comfort', 1); }
+  else { add('classic', 1); add('fruity', 1); add('fresh', 1); }
+
+  const scored = [];
+  menuData[SHOP_ID].categories.forEach(cat => {
+    cat.items.forEach(item => {
+      scored.push({ item, score: dotProduct(drinkTagVector(item, cat.title), pref) });
+    });
+  });
+  scored.sort((a, b) => b.score - a.score);
+
+  const seen = new Set();
+  const top3 = [];
+  scored.forEach(({ item }) => {
+    if (!seen.has(item.name) && top3.length < 3) { seen.add(item.name); top3.push(item); }
+  });
+
+  const resultEl = box.querySelector('#quizResult');
+  resultEl.innerHTML = `
+    <p class="fortune-rec-label" style="margin-top:14px">為你精選三款今日推薦：</p>
+    <div class="fortune-rec-list">
+      ${top3.map(d => `
+        <div class="fortune-rec-card" data-name="${d.name}">
+          <span class="fortune-rec-name">${d.name}</span>
+          <span class="fortune-rec-price">${d.price}</span>
+        </div>`).join('')}
+    </div>
+    <button class="summary-confirm-btn" id="fortuneOrderOwnBtn">🧋 都不喜歡？直接看完整菜單</button>`;
+
+  resultEl.querySelectorAll('.fortune-rec-card').forEach(card => {
     card.addEventListener('click', () => { closeFortuneOverlay(); openShopAtItem(card.dataset.name); });
   });
-  box.querySelector('#fortuneOrderOwnBtn').addEventListener('click', () => { closeFortuneOverlay(); openShop(); });
+  resultEl.querySelector('#fortuneOrderOwnBtn').addEventListener('click', () => { closeFortuneOverlay(); openShop(); });
+  resultEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 /* ══════════════════════════════════════════════

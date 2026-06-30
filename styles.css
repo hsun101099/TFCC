@@ -163,6 +163,21 @@ body {
 .fortune-zodiac-icon { font-size: 1.3rem; }
 .fortune-zodiac-name { font-size: 0.66rem; font-weight: 600; color: var(--text); }
 
+/* ── Drink quiz ── */
+.fortune-quiz { margin-top: 14px; }
+.fortune-quiz-title { font-size: 0.82rem; font-weight: 700; color: var(--brown); text-align: center; margin-bottom: 14px; }
+.fortune-quiz-q { margin-bottom: 12px; }
+.fortune-quiz-label { display: block; font-size: 0.72rem; color: var(--text-light); font-weight: 600; margin-bottom: 6px; }
+.fortune-quiz-opts { display: flex; gap: 8px; }
+.fortune-quiz-opt {
+  flex: 1; padding: 10px 6px; border: 1.5px solid var(--warm); border-radius: 12px;
+  background: var(--white); font-size: 0.78rem; color: var(--text); cursor: pointer;
+  transition: all 0.15s; font-weight: 500; line-height: 1.4;
+  -webkit-tap-highlight-color: transparent;
+}
+.fortune-quiz-opt:hover { border-color: var(--brown); background: var(--warm); }
+.fortune-quiz-opt.selected { border-color: var(--brown); background: var(--warm); font-weight: 700; color: var(--brown); }
+
 /* ── Tarot card-flip draw ── */
 .tarot-stage { display: flex; justify-content: center; padding: 10px 0 16px; perspective: 1200px; }
 .tarot-card {
