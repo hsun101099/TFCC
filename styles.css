@@ -151,6 +151,18 @@ body {
 .fortune-pick-icon { font-size: 1.3rem; }
 .fortune-pick-name { font-size: 0.74rem; font-weight: 600; color: var(--text); margin-top: 2px; }
 
+/* ── Zodiac daily fortune grid ── */
+.fortune-zodiac-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 18px; }
+.fortune-zodiac-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 10px 4px; border: 1.5px solid var(--warm); border-radius: 14px;
+  background: var(--white); cursor: pointer; transition: all 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.fortune-zodiac-btn:hover { border-color: var(--brown); background: var(--warm); }
+.fortune-zodiac-icon { font-size: 1.3rem; }
+.fortune-zodiac-name { font-size: 0.66rem; font-weight: 600; color: var(--text); }
+
 /* ── Tarot card-flip draw ── */
 .tarot-stage { display: flex; justify-content: center; padding: 10px 0 16px; perspective: 1200px; }
 .tarot-card {

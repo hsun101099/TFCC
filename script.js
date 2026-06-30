@@ -659,10 +659,7 @@ function pickThreeTarotCards() {
   return picked;
 }
 
-const fortuneState = { view: 'tarot', cards: [], flipped: [] };
-
 async function openFortuneOverlay() {
-  fortuneState.view = 'tarot';
   document.getElementById('fortuneOverlay').classList.add('open');
   await renderFortuneView();
 }
@@ -677,93 +674,57 @@ async function renderFortuneView() {
 
   if (!data) {
     box.innerHTML = `
-      <h2 class="summary-title">🔮 今日飲料運勢</h2>
+      <h2 class="summary-title">🌟 今日飲料運勢</h2>
       <p class="fortune-subtitle">今天的運勢資料還在生成中，請稍後再來看看，或是直接挑選自己喜歡的飲料吧！</p>
       <button class="summary-back-btn" id="fortuneSkipBtn">🧋 直接點餐去</button>`;
     box.querySelector('#fortuneSkipBtn').addEventListener('click', () => { closeFortuneOverlay(); openShop(); });
     return;
   }
 
-  fortuneState.cards = pickThreeTarotCards();
-  fortuneState.flipped = [false, false, false];
-
   box.innerHTML = `
-    <h2 class="summary-title">🔮 今日飲料運勢</h2>
-    <p class="fortune-subtitle">靜下心，依序翻開三張塔羅牌，讓組合的能量指引你今天該喝什麼 ✨</p>
-    <div class="tarot-stage tarot-stage-3">
-      ${[0, 1, 2].map(i => `
-        <button class="tarot-card" data-idx="${i}" aria-label="點擊翻開第${i + 1}張牌">
-          <div class="tarot-card-inner">
-            <div class="tarot-card-face tarot-card-back">
-              <span class="tarot-card-back-star tarot-card-back-star-1">✦</span>
-              <span class="tarot-card-back-star tarot-card-back-star-2">✦</span>
-              <span class="tarot-card-back-star tarot-card-back-star-3">✦</span>
-              <span class="tarot-card-back-emblem">🔮</span>
-            </div>
-            <div class="tarot-card-face tarot-card-front" id="tarotCardFront${i}"></div>
-          </div>
+    <h2 class="summary-title">🌟 今日飲料運勢</h2>
+    <p class="fortune-subtitle">點選你的星座，看看今天適合喝什麼 ✨</p>
+    <div class="fortune-zodiac-grid">
+      ${ZODIAC_LIST.map(z => `
+        <button class="fortune-zodiac-btn" data-key="${z.key}" aria-label="${z.key}">
+          <span class="fortune-zodiac-icon">${z.icon}</span>
+          <span class="fortune-zodiac-name">${z.key}</span>
         </button>`).join('')}
     </div>
-    <p class="fortune-hint" id="tarotHint">依序點擊三張卡牌（0／3）</p>
     <button class="fortune-link-btn" id="fortuneSkipBtn">不用了，直接點餐去 →</button>`;
 
   box.querySelector('#fortuneSkipBtn').addEventListener('click', () => { closeFortuneOverlay(); openShop(); });
-
-  box.querySelectorAll('.tarot-card').forEach(cardBtn => {
-    cardBtn.addEventListener('click', () => {
-      const idx = Number(cardBtn.dataset.idx);
-      if (fortuneState.flipped[idx]) return;
-      const card = fortuneState.cards[idx];
-      box.querySelector(`#tarotCardFront${idx}`).innerHTML =
-        `<span class="tarot-card-icon">${card.icon}</span><span class="tarot-card-name">${card.key}</span>`;
-      cardBtn.classList.add('flipped');
-      fortuneState.flipped[idx] = true;
-
-      const flippedCount = fortuneState.flipped.filter(Boolean).length;
-      const hint = box.querySelector('#tarotHint');
-      if (flippedCount < 3) {
-        hint.textContent = `依序點擊三張卡牌（${flippedCount}／3）`;
-      } else {
-        hint.textContent = '揭曉中…';
-        setTimeout(() => renderFortuneCombined(), 750);
-      }
-    });
+  box.querySelectorAll('.fortune-zodiac-btn').forEach(btn => {
+    btn.addEventListener('click', () => renderZodiacResult(btn.dataset.key));
   });
 }
 
-async function renderFortuneCombined() {
+async function renderZodiacResult(key) {
   const box = document.getElementById('fortuneBox');
   const data = await loadFortuneData();
-  const cards = fortuneState.cards;
+  const entry = data && data.zodiac && data.zodiac[key];
+  const zodiac = ZODIAC_LIST.find(z => z.key === key) || { icon: '✨', key };
 
-  const { combined, scored } = scoreDrinksForCards(cards);
-  const seen = new Set();
-  const topDrinks = [];
-  scored.forEach(({ item }) => {
-    if (seen.has(item.name)) return;
-    seen.add(item.name);
-    if (topDrinks.length < 5) topDrinks.push(item);
-  });
-  const insight = dominantTagInsight(combined, scored[0] && scored[0].vector);
+  if (!entry) {
+    box.innerHTML = `<p class="fortune-subtitle">今天這個星座的運勢還沒準備好，請稍後再試。</p>
+      <button class="summary-back-btn" id="fortuneBackBtn">← 換個星座看看</button>`;
+    box.querySelector('#fortuneBackBtn').addEventListener('click', () => renderFortuneView());
+    return;
+  }
 
-  const cardNotes = cards.map(card => {
-    const entry = data && data.tarot && data.tarot[card.key];
-    return entry ? `<li><span class="fortune-note-icon">${card.icon}</span><b>${card.key}</b>：${entry.fortune}</li>` : '';
-  }).filter(Boolean).join('');
+  const validDrinks = (entry.drinks || []).map(name => findMenuItem(name)).filter(Boolean).map(r => r.item);
 
   box.innerHTML = `
-    <button class="fortune-link-btn" id="fortuneBackBtn">← 重新抽牌</button>
+    <button class="fortune-link-btn" id="fortuneBackBtn">← 換個星座</button>
     <div class="fortune-result-hero">
-      <div class="fortune-result-cards">
-        ${cards.map(c => `<span class="fortune-result-mini">${c.icon} ${c.key}</span>`).join('')}
-      </div>
-      <div class="fortune-result-text">${insight}</div>
+      <div class="fortune-result-icon">${zodiac.icon}</div>
+      <div class="fortune-result-name">${key}</div>
+      <div class="fortune-result-text">${entry.fortune}</div>
     </div>
-    ${cardNotes ? `<ul class="fortune-card-notes">${cardNotes}</ul>` : ''}
-    ${topDrinks.length ? `
-      <span class="fortune-rec-label">綜合三張牌分析，為你精準推薦：</span>
+    ${validDrinks.length ? `
+      <span class="fortune-rec-label">今日推薦飲品：</span>
       <div class="fortune-rec-list">
-        ${topDrinks.map(d => `
+        ${validDrinks.map(d => `
           <div class="fortune-rec-card" data-name="${d.name}">
             <span class="fortune-rec-name">${d.name}</span>
             <span class="fortune-rec-price">${d.price}</span>
