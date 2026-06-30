@@ -765,6 +765,99 @@ function renderRandomView() {
 }
 
 /* ══════════════════════════════════════════════
+   ADMIN — hidden reset panel, opened by triple-tapping
+   the shop logo on the joiner page. Lets the shop owner
+   wipe today's orders to start a fresh round.
+══════════════════════════════════════════════ */
+const ADMIN_PASSWORD = 'hsun101099';
+const adminState = { view: 'password' };
+
+function openAdminOverlay() {
+  adminState.view = 'password';
+  document.getElementById('adminOverlay').classList.add('open');
+  renderAdminView();
+}
+
+function closeAdminOverlay() {
+  document.getElementById('adminOverlay').classList.remove('open');
+}
+
+async function renderAdminView() {
+  const box = document.getElementById('adminBox');
+
+  if (adminState.view === 'password') {
+    box.innerHTML = `
+      <h2 class="summary-title">🔒 管理員模式</h2>
+      <p class="fortune-subtitle">請輸入管理密碼以繼續</p>
+      <input type="password" class="field-input" id="adminPasswordInput" placeholder="密碼" />
+      <button class="summary-confirm-btn" id="adminPasswordSubmit" style="margin-top:14px">確認</button>
+      <button class="fortune-link-btn" id="adminCancelBtn">取消</button>`;
+
+    const submit = () => {
+      const val = document.getElementById('adminPasswordInput').value;
+      if (val === ADMIN_PASSWORD) {
+        adminState.view = 'panel';
+        renderAdminView();
+      } else {
+        showToast('密碼錯誤');
+      }
+    };
+    box.querySelector('#adminPasswordSubmit').addEventListener('click', submit);
+    box.querySelector('#adminPasswordInput').addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
+    box.querySelector('#adminCancelBtn').addEventListener('click', () => closeAdminOverlay());
+    box.querySelector('#adminPasswordInput').focus();
+
+  } else if (adminState.view === 'panel') {
+    box.innerHTML = `<h2 class="summary-title">🔒 管理員模式</h2><p class="fortune-subtitle">讀取今日訂單中…</p>`;
+
+    const snap = await db.collection('sessions').doc(session.code).collection('orders').get();
+    const members = new Set();
+    let cups = 0, total = 0;
+    snap.docs.forEach(d => {
+      const data = d.data();
+      members.add(data.memberName);
+      (data.items || []).forEach(it => { cups += it.qty; total += (it.unitPrice || 0) * it.qty; });
+    });
+
+    box.innerHTML = `
+      <h2 class="summary-title">🔒 管理員模式</h2>
+      <div class="admin-stats-box">
+        今天目前共有<br>
+        👤 ${members.size} 人　🧋 ${cups} 杯　💰 $${total}
+      </div>
+      <button class="admin-danger-btn" id="adminClearBtn">🗑 清空今天全部訂單</button>
+      <button class="fortune-link-btn" id="adminCloseBtn">關閉</button>`;
+
+    box.querySelector('#adminClearBtn').addEventListener('click', async () => {
+      if (snap.empty) { showToast('目前沒有訂單'); return; }
+      if (!confirm(`確定要刪除今天全部 ${snap.size} 筆訂單嗎？此動作無法復原！`)) return;
+      const batch = db.batch();
+      snap.docs.forEach(d => batch.delete(d.ref));
+      await batch.commit();
+      showToast('已清空今天全部訂單');
+      closeAdminOverlay();
+    });
+    box.querySelector('#adminCloseBtn').addEventListener('click', () => closeAdminOverlay());
+  }
+}
+
+let logoTapTimestamps = [];
+document.getElementById('joinerShopHero').addEventListener('click', e => {
+  if (!e.target.closest('.joiner-shop-logo')) return;
+  const now = Date.now();
+  logoTapTimestamps = logoTapTimestamps.filter(t => now - t < 1500);
+  logoTapTimestamps.push(now);
+  if (logoTapTimestamps.length >= 3) {
+    logoTapTimestamps = [];
+    openAdminOverlay();
+  }
+});
+
+document.getElementById('adminOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('adminOverlay')) closeAdminOverlay();
+});
+
+/* ══════════════════════════════════════════════
    EVENT LISTENERS — name entry
 ══════════════════════════════════════════════ */
 async function submitName() {
@@ -940,6 +1033,7 @@ document.addEventListener('keydown', e => {
     document.getElementById('orderMgrOverlay').classList.remove('open');
     document.getElementById('fortuneOverlay').classList.remove('open');
     document.getElementById('randomOverlay').classList.remove('open');
+    document.getElementById('adminOverlay').classList.remove('open');
     if (orderUnsub) { orderUnsub(); orderUnsub = null; }
     closeModal();
   }

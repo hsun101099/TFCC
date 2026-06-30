@@ -513,6 +513,14 @@ body {
 }
 .summary-back-btn:hover { background: #e8d09a; }
 
+.admin-danger-btn {
+  width: 100%; padding: 14px; border: none; border-radius: 14px;
+  background: #c0392b; color: var(--white); font-size: 0.95rem;
+  font-weight: 700; cursor: pointer; margin-bottom: 10px; transition: background 0.2s;
+}
+.admin-danger-btn:hover { background: #a3301f; }
+.admin-stats-box { font-size: 0.85rem; color: var(--text); line-height: 1.8; background: var(--warm); border-radius: 12px; padding: 14px; margin-bottom: 16px; }
+
 /* ── Order Manager ── */
 .mgr-header { margin-bottom: 14px; }
 
