@@ -257,6 +257,7 @@ function renderStep3() {
   const sizes = getAvailableSizes(item.price);
   const defaultSize = sizes.L ? 'L' : 'M';
   const hasToppings = data.toppings && data.toppings.length > 0;
+  const rec = recommendConfig[SHOP_ID] && recommendConfig[SHOP_ID][item.name];
 
   panel.innerHTML = `
     <div class="customize-wrap">
@@ -268,6 +269,14 @@ function renderStep3() {
         </div>
         <div class="customize-item-price">${item.price}</div>
       </div>
+
+      ${rec ? `
+      <div class="rec-box">
+        <div class="rec-box-label">💡 網路推薦喝法</div>
+        <div class="rec-box-value">${rec.sweetness}・${rec.ice}</div>
+        ${rec.note ? `<div class="rec-box-note">${rec.note}</div>` : ''}
+        <button class="rec-apply-btn" id="applyRecBtn">一鍵套用推薦</button>
+      </div>` : ''}
 
       <div class="customize-section">
         <label class="customize-label">🥤 杯型</label>
@@ -365,6 +374,16 @@ function renderStep3() {
       state.pendingItem.ice = pill.dataset.val;
     });
   });
+
+  if (rec) {
+    panel.querySelector('#applyRecBtn').addEventListener('click', () => {
+      const sweetPill = panel.querySelector(`#sweetnessPills .option-pill[data-val="${rec.sweetness}"]`);
+      const icePill = panel.querySelector(`#icePills .option-pill[data-val="${rec.ice}"]`);
+      if (sweetPill) sweetPill.click();
+      if (icePill) icePill.click();
+      showToast('已套用推薦甜度冰塊');
+    });
+  }
 
   if (hasToppings) {
     // Toppings are single-select — the combo options (混珠/珍波椰/珍椰/波椰)
