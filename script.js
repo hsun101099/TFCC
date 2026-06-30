@@ -773,6 +773,15 @@ function renderFortuneQuiz(box, zodiacKey) {
   });
 }
 
+// Collapse variant names like 冰淇淋麵茶綠茶拿鐵 / 冰淇淋麵茶紅茶拿鐵 into the
+// same series key so we never recommend 3 drinks that differ only in tea base.
+function drinkSeriesKey(name) {
+  return name
+    .replace(/紅茶|綠茶|青茶|四季春|黃金烏龍|重焙烏龍|烏龍茶|烏龍|四季/g, '')
+    .replace(/[紅綠青]$/, '')
+    .trim() || name;
+}
+
 function renderFortuneQuizResult(box) {
   const { style, topping, base, _zodiacKey } = quizAnswers;
   const wantTopping = topping === 'yes';
@@ -803,32 +812,48 @@ function renderFortuneQuizResult(box) {
   scoreAll.sort((a, b) => b.score - a.score);
 
   const filtered = scoreAll.filter(r => r.hasToppings === wantTopping && r.isMilky === wantMilk);
-  // Fallback: if filtered pool too small, use everything sorted by score
   const pool = filtered.length >= 3 ? filtered : scoreAll;
 
+  // Pick top 3 with series dedup — skip items whose series key already appeared
   const seen = new Set();
+  const seenSeries = new Set();
   const top3 = [];
   pool.forEach(({ item }) => {
-    if (!seen.has(item.name) && top3.length < 3) { seen.add(item.name); top3.push(item); }
+    const sk = drinkSeriesKey(item.name);
+    if (!seen.has(item.name) && !seenSeries.has(sk) && top3.length < 3) {
+      seen.add(item.name);
+      seenSeries.add(sk);
+      top3.push(item);
+    }
   });
 
   const resultEl = box.querySelector('#quizResult');
-  resultEl.innerHTML = `
-    <p class="fortune-rec-label" style="margin-top:14px">為你精選三款今日推薦：</p>
-    <div class="fortune-rec-list">
-      ${top3.map(d => `
-        <div class="fortune-rec-card" data-name="${d.name}">
-          <span class="fortune-rec-name">${d.name}</span>
-          <span class="fortune-rec-price">${d.price}</span>
-        </div>`).join('')}
-    </div>
-    <button class="summary-confirm-btn" id="fortuneOrderOwnBtn">🧋 都不喜歡？直接看完整菜單</button>`;
 
-  resultEl.querySelectorAll('.fortune-rec-card').forEach(card => {
-    card.addEventListener('click', () => { closeFortuneOverlay(); openShopAtItem(card.dataset.name); });
-  });
-  resultEl.querySelector('#fortuneOrderOwnBtn').addEventListener('click', () => { closeFortuneOverlay(); openShop(); });
+  // Show computing animation, then reveal cards after a short delay
+  resultEl.innerHTML = `
+    <div class="fortune-computing">
+      <span class="fortune-computing-orb">🔮</span>
+      <p class="fortune-computing-text">今日命運運算中…</p>
+    </div>`;
   resultEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+  setTimeout(() => {
+    resultEl.innerHTML = `
+      <p class="fortune-rec-label" style="margin-top:14px">✨ 命運已定，今天就喝這個！</p>
+      <div class="fortune-rec-list">
+        ${top3.map(d => `
+          <div class="fortune-rec-card fortune-card-reveal" data-name="${d.name}">
+            <span class="fortune-rec-name">${d.name}</span>
+            <span class="fortune-rec-price">${d.price}</span>
+          </div>`).join('')}
+      </div>
+      <button class="summary-confirm-btn" id="fortuneOrderOwnBtn">🧋 都不喜歡？直接看完整菜單</button>`;
+
+    resultEl.querySelectorAll('.fortune-rec-card').forEach(card => {
+      card.addEventListener('click', () => { closeFortuneOverlay(); openShopAtItem(card.dataset.name); });
+    });
+    resultEl.querySelector('#fortuneOrderOwnBtn').addEventListener('click', () => { closeFortuneOverlay(); openShop(); });
+  }, 1500);
 }
 
 /* ══════════════════════════════════════════════
