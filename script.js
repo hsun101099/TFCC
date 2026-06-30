@@ -667,6 +667,104 @@ async function renderFortuneResult(mode, key) {
 }
 
 /* ══════════════════════════════════════════════
+   RANDOM DRINK PICKER — "隨機點飲料"
+══════════════════════════════════════════════ */
+function getAllMenuItems() {
+  const data = menuData[SHOP_ID];
+  const seen = new Set();
+  const items = [];
+  data.categories.forEach(cat => {
+    cat.items.forEach(item => {
+      if (!seen.has(item.name)) { seen.add(item.name); items.push(item); }
+    });
+  });
+  return items;
+}
+
+function pickRandomDrinks(count) {
+  const pool = getAllMenuItems();
+  const shuffled = pool.slice().sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, count);
+}
+
+const randomState = { view: 'count', count: 0, drinks: [] };
+
+function openRandomOverlay() {
+  randomState.view = 'count';
+  document.getElementById('randomOverlay').classList.add('open');
+  renderRandomView();
+}
+
+function closeRandomOverlay() {
+  document.getElementById('randomOverlay').classList.remove('open');
+}
+
+function renderRandomView() {
+  const box = document.getElementById('randomBox');
+
+  if (randomState.view === 'count') {
+    box.innerHTML = `
+      <h2 class="summary-title">🎲 隨機點飲料</h2>
+      <p class="fortune-subtitle">選不出來嗎？讓我們隨機挑幾杯給你參考吧！想看幾杯呢？</p>
+      <div class="fortune-pick-grid">
+        ${[1, 2, 3, 4, 5].map(n => `
+          <button class="fortune-pick-btn" data-count="${n}">
+            <div class="fortune-pick-icon">${n}</div>
+            <div class="fortune-pick-name">${n} 杯</div>
+          </button>`).join('')}
+      </div>
+      <button class="fortune-link-btn" id="randomSkipBtn">不用了，直接點餐去 →</button>`;
+    box.querySelectorAll('.fortune-pick-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const n = parseInt(btn.dataset.count, 10);
+        randomState.count = n;
+        randomState.drinks = pickRandomDrinks(n);
+        randomState.view = 'result';
+        renderRandomView();
+      });
+    });
+    box.querySelector('#randomSkipBtn').addEventListener('click', () => { closeRandomOverlay(); openShop(); });
+
+  } else if (randomState.view === 'result') {
+    const drinks = randomState.drinks;
+    box.innerHTML = `
+      <button class="fortune-link-btn" id="randomBackBtn">← 重新選擇杯數</button>
+      <h2 class="summary-title">🎲 隨機選了 ${drinks.length} 杯給你</h2>
+      <p class="fortune-subtitle">點一杯直接開始點餐，或是再縮小範圍重新抽！</p>
+      <div class="fortune-rec-list">
+        ${drinks.map(d => `
+          <div class="fortune-rec-card" data-name="${d.name}">
+            <span class="fortune-rec-name">${d.name}</span>
+            <span class="fortune-rec-price">${d.price}</span>
+          </div>`).join('')}
+      </div>
+      <div class="fortune-actions">
+        <button class="random-action-btn" id="randomRerollBtn">🔄 重新抽 ${drinks.length} 杯</button>
+        ${drinks.length > 1 ? `<button class="random-action-btn" id="randomNarrowBtn">🎯 還是不知道？少一杯再抽（${drinks.length - 1} 杯）</button>` : ''}
+        <button class="summary-confirm-btn" id="randomOrderOwnBtn">🧋 都不喜歡？直接看完整菜單</button>
+      </div>`;
+
+    box.querySelector('#randomBackBtn').addEventListener('click', () => { randomState.view = 'count'; renderRandomView(); });
+    box.querySelectorAll('.fortune-rec-card').forEach(card => {
+      card.addEventListener('click', () => { closeRandomOverlay(); openShopAtItem(card.dataset.name); });
+    });
+    box.querySelector('#randomRerollBtn').addEventListener('click', () => {
+      randomState.drinks = pickRandomDrinks(randomState.count);
+      renderRandomView();
+    });
+    const narrowBtn = box.querySelector('#randomNarrowBtn');
+    if (narrowBtn) {
+      narrowBtn.addEventListener('click', () => {
+        randomState.count -= 1;
+        randomState.drinks = pickRandomDrinks(randomState.count);
+        renderRandomView();
+      });
+    }
+    box.querySelector('#randomOrderOwnBtn').addEventListener('click', () => { closeRandomOverlay(); openShop(); });
+  }
+}
+
+/* ══════════════════════════════════════════════
    EVENT LISTENERS — name entry
 ══════════════════════════════════════════════ */
 async function submitName() {
@@ -703,9 +801,14 @@ document.getElementById('changeNameBtn').addEventListener('click', () => {
 ══════════════════════════════════════════════ */
 document.getElementById('joinerOrderBtn').addEventListener('click', () => openShop());
 document.getElementById('joinerFortuneBtn').addEventListener('click', () => openFortuneOverlay());
+document.getElementById('joinerRandomBtn').addEventListener('click', () => openRandomOverlay());
 
 document.getElementById('fortuneOverlay').addEventListener('click', e => {
   if (e.target === document.getElementById('fortuneOverlay')) closeFortuneOverlay();
+});
+
+document.getElementById('randomOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('randomOverlay')) closeRandomOverlay();
 });
 
 document.getElementById('modalClose').addEventListener('click', closeModal);
@@ -836,6 +939,7 @@ document.addEventListener('keydown', e => {
     document.getElementById('summaryOverlay').classList.remove('open');
     document.getElementById('orderMgrOverlay').classList.remove('open');
     document.getElementById('fortuneOverlay').classList.remove('open');
+    document.getElementById('randomOverlay').classList.remove('open');
     if (orderUnsub) { orderUnsub(); orderUnsub = null; }
     closeModal();
   }
