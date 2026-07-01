@@ -593,6 +593,15 @@ function keywordTags(name) {
   if (/珍珠|波霸|椰果|珍波椰|混珠|珍椰|波椰/.test(name)) add('bold', 0.6);
   if (/麵茶|阿華田/.test(name)) add('comfort', 0.7);
   if (/^(阿薩姆紅茶|四季春青茶|黃金烏龍|茉莉綠茶|8冰綠|8冰茶)$/.test(name)) add('classic', 0.5);
+  // Per-drink character tags so zodiac differentiates within a category
+  if (/重焙/.test(name)) add('bold', 0.7);
+  if (/瑪奇朵/.test(name)) add('indulgent', 0.5);
+  if (/奶綠/.test(name)) add('fresh', 0.4);
+  if (/奶青/.test(name)) add('fresh', 0.4);
+  if (/茉莉/.test(name)) add('fresh', 0.4);
+  if (/桔子/.test(name)) { add('fruity', 0.5); add('fresh', 0.3); }
+  if (/四季春|四季奶|四季瑪|四季拿/.test(name)) add('fresh', 0.3);
+  if (/黃金烏龍/.test(name)) add('classic', 0.4);
   return tags;
 }
 
@@ -782,6 +791,16 @@ function drinkSeriesKey(name) {
     .trim() || name;
 }
 
+// Returns a "flavor character" key so at most one drink of the same dominant
+// flavor (重焙 / 黃金烏龍 / 四季) appears in the top-3, preventing all picks
+// from being variants of the same roasted-oolong / golden-oolong / four-seasons theme.
+function drinkFlavorChar(name) {
+  if (/重焙/.test(name)) return '重焙';
+  if (/黃金烏龍/.test(name)) return '黃金烏龍';
+  if (/四季春|四季奶|四季瑪|四季拿/.test(name)) return '四季';
+  return null;
+}
+
 function renderFortuneQuizResult(box) {
   const { style, topping, flavor, _zodiacKey } = quizAnswers;
   const wantTopping = topping === 'yes';
@@ -817,17 +836,21 @@ function renderFortuneQuizResult(box) {
   const filtered = scoreAll.filter(r => r.hasToppings === wantTopping && r.isMilky === wantMilk);
   const pool = filtered.length >= 3 ? filtered : scoreAll;
 
-  // Pick top 3 with series dedup — skip items whose series key already appeared
+  // Pick top 3 with series + flavor-character dedup
   const seen = new Set();
   const seenSeries = new Set();
+  const seenFlavor = new Set();
   const top3 = [];
   pool.forEach(({ item }) => {
+    if (top3.length >= 3) return;
     const sk = drinkSeriesKey(item.name);
-    if (!seen.has(item.name) && !seenSeries.has(sk) && top3.length < 3) {
-      seen.add(item.name);
-      seenSeries.add(sk);
-      top3.push(item);
-    }
+    const fk = drinkFlavorChar(item.name);
+    if (seen.has(item.name) || seenSeries.has(sk)) return;
+    if (fk && seenFlavor.has(fk)) return;
+    seen.add(item.name);
+    seenSeries.add(sk);
+    if (fk) seenFlavor.add(fk);
+    top3.push(item);
   });
 
   const resultEl = box.querySelector('#quizResult');
